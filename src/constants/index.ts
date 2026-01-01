@@ -1,6 +1,6 @@
 export * from './colors';
 
-export const API_BASE_URL = 'https://your-api-url.com/api'; // Ganti dengan URL API Anda
+export const API_BASE_URL = 'http://localhost:3000/api'; /// Ganti dengan URL API Anda
 export const STORAGE_KEYS = {
   AUTH_TOKEN: '@auth_token',
   USER_DATA: '@user_data',
