@@ -85,7 +85,7 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
       // await authService.forgotPassword(email);
       
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 1500));
       
       Alert.alert(
         'Success',
