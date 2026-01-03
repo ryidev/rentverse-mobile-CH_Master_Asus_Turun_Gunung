@@ -7,6 +7,7 @@ Panduan lengkap untuk setup environment React Native development di Windows untu
 ## 📋 Prerequisites
 
 ### 1. **Node.js**
+
 - Download dari: https://nodejs.org/
 - Versi minimum: **Node 20** atau lebih tinggi
 - Verifikasi instalasi:
@@ -16,10 +17,12 @@ Panduan lengkap untuk setup environment React Native development di Windows untu
   ```
 
 ### 2. **Java Development Kit (JDK)**
+
 - Download: **JDK 17** (LTS) dari https://adoptium.net/
 - Install dan set JAVA_HOME
 
 **Set Environment Variables:**
+
 1. Buka **System Properties** → **Environment Variables**
 2. Tambahkan variable baru:
    - Variable name: `JAVA_HOME`
@@ -27,15 +30,18 @@ Panduan lengkap untuk setup environment React Native development di Windows untu
 3. Edit **Path**, tambahkan: `%JAVA_HOME%\bin`
 
 **Verifikasi:**
+
 ```cmd
 java -version
 javac -version
 ```
 
 ### 3. **Android Studio**
+
 Download dari: https://developer.android.com/studio
 
 **Install Components:**
+
 - Android SDK
 - Android SDK Platform
 - Android Virtual Device (AVD)
@@ -49,6 +55,7 @@ Download dari: https://developer.android.com/studio
 1. Buka **Android Studio**
 2. Klik **More Actions** → **SDK Manager**
 3. Di tab **SDK Platforms**, install:
+
    - ✅ **Android 14 (UpsideDownCake)** atau versi terbaru
    - ✅ Show Package Details, centang:
      - Android SDK Platform 34
@@ -64,6 +71,7 @@ Download dari: https://developer.android.com/studio
 ### 2. Set Environment Variables
 
 **ANDROID_HOME:**
+
 1. Buka **System Properties** → **Environment Variables**
 2. Tambahkan variable baru:
    - Variable name: `ANDROID_HOME`
@@ -71,6 +79,7 @@ Download dari: https://developer.android.com/studio
 
 **Update Path:**
 Tambahkan ke **Path**:
+
 ```
 %ANDROID_HOME%\platform-tools
 %ANDROID_HOME%\emulator
@@ -79,6 +88,7 @@ Tambahkan ke **Path**:
 ```
 
 **Verifikasi:**
+
 ```cmd
 adb version
 ```
@@ -110,9 +120,11 @@ avdmanager create avd -n Pixel_5_API_34 -k "system-images;android-34;google_apis
 ### Jalankan Emulator
 
 **Via Android Studio:**
+
 - Virtual Device Manager → Klik ▶️ Play
 
 **Via Command Line:**
+
 ```cmd
 emulator -avd Pixel_5_API_34
 ```
@@ -139,6 +151,7 @@ npm install
 ```
 
 **Jika ada error, coba:**
+
 ```cmd
 npm install --legacy-peer-deps
 ```
@@ -158,19 +171,26 @@ Tool ini akan check apakah semua requirements sudah terpenuhi.
 ### Method 1: Two Terminals (Recommended)
 
 **Terminal 1 - Start Metro Bundler:**
+
 ```cmd
 npm start
+adb reverse tcp:8081 tcp:8081
 ```
+
 atau
+
 ```cmd
 npx react-native start
 ```
 
 **Terminal 2 - Run Android App:**
+
 ```cmd
 npm run android
 ```
+
 atau
+
 ```cmd
 npx react-native run-android
 ```
@@ -190,6 +210,7 @@ Metro bundler akan start otomatis.
 ### Error: "SDK location not found"
 
 **Fix:**
+
 1. Buat file `local.properties` di folder `android/`
 2. Isi dengan:
    ```properties
@@ -200,6 +221,7 @@ Metro bundler akan start otomatis.
 ### Error: "JAVA_HOME is not set"
 
 **Fix:**
+
 ```cmd
 # Check Java
 java -version
@@ -214,6 +236,7 @@ set JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.x-hotspot
 
 **Fix:**
 Tambahkan ke Path:
+
 ```
 C:\Users\YOUR_USERNAME\AppData\Local\Android\Sdk\platform-tools
 ```
@@ -223,6 +246,7 @@ Restart Command Prompt setelah update Path.
 ### Error: Port 8081 Already in Use
 
 **Fix:**
+
 ```cmd
 # Kill process on port 8081
 netstat -ano | findstr :8081
@@ -235,6 +259,7 @@ npx react-native start --port 8082
 ### Build Error: "Could not resolve all files"
 
 **Fix:**
+
 ```cmd
 cd android
 gradlew clean
@@ -245,6 +270,7 @@ npm run android
 ### Emulator Slow
 
 **Fix:**
+
 1. Enable **Hardware Acceleration (HAXM)**
    - Install via Android Studio → SDK Manager → SDK Tools → Intel HAXM
 2. Allocate more RAM to emulator:
@@ -253,6 +279,7 @@ npm run android
 ### Metro Bundler Issues
 
 **Fix:**
+
 ```cmd
 # Clear cache
 npx react-native start --reset-cache
@@ -297,29 +324,31 @@ org.gradle.caching=true
 
 ## 🎯 Quick Commands Reference
 
-| Task | Command |
-|------|---------|
-| Start Metro | `npm start` |
-| Run Android | `npm run android` |
-| List devices | `adb devices` |
-| List emulators | `emulator -list-avds` |
-| Start emulator | `emulator -avd EMULATOR_NAME` |
-| Clear cache | `npm start -- --reset-cache` |
-| Clean build | `cd android && gradlew clean` |
-| Check setup | `npx react-native doctor` |
-| View logs | `npx react-native log-android` |
+| Task           | Command                        |
+| -------------- | ------------------------------ |
+| Start Metro    | `npm start`                    |
+| Run Android    | `npm run android`              |
+| List devices   | `adb devices`                  |
+| List emulators | `emulator -list-avds`          |
+| Start emulator | `emulator -avd EMULATOR_NAME`  |
+| Clear cache    | `npm start -- --reset-cache`   |
+| Clean build    | `cd android && gradlew clean`  |
+| Check setup    | `npx react-native doctor`      |
+| View logs      | `npx react-native log-android` |
 
 ---
 
 ## 🔐 Connect Physical Device
 
 ### Enable Developer Mode:
+
 1. Settings → About phone
 2. Tap **Build number** 7 kali
 3. Developer options akan muncul
 4. Enable **USB Debugging**
 
 ### Connect via USB:
+
 ```cmd
 # Check connection
 adb devices
@@ -330,11 +359,13 @@ adb devices
 ```
 
 ### Run on Device:
+
 ```cmd
 npm run android
 ```
 
 ### Connect via WiFi (Optional):
+
 ```cmd
 # 1. Connect device via USB first
 # 2. Get device IP: Settings → About → Status → IP address
@@ -353,6 +384,7 @@ npm run android
 ## 📦 Build APK for Testing
 
 ### Debug APK:
+
 ```cmd
 cd android
 gradlew assembleDebug
@@ -361,6 +393,7 @@ gradlew assembleDebug
 Output: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ### Release APK (Unsigned):
+
 ```cmd
 cd android
 gradlew assembleRelease
@@ -409,6 +442,7 @@ Pastikan semua ini sudah terinstall:
 **Setup selesai! Ready untuk develop!** 🎉
 
 Untuk memulai development:
+
 ```cmd
 npm start
 npm run android

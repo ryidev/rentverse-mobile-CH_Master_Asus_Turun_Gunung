@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { User, LoginCredentials, RegisterData } from '../types';
+import { User, LoginCredentials, RegisterData, AuthResponse } from '../types';
 import { authService } from '../services/authService';
 import { storageService } from '../utils/storage';
 
@@ -7,8 +7,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  login: (credentials: LoginCredentials, authResponse?: AuthResponse) => Promise<void>;
+  register: (data: RegisterData, authResponse?: AuthResponse) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
 }
@@ -38,10 +38,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials, authResponse?: AuthResponse) => {
     try {
-      const response = await authService.login(credentials);
+      const response = authResponse || await authService.login(credentials);
       await storageService.saveToken(response.token);
+      if (response.refreshToken) {
+        await storageService.setRefreshToken(response.refreshToken);
+      }
       await storageService.saveUserData(response.user);
       setUser(response.user);
     } catch (error) {
@@ -50,10 +53,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (data: RegisterData) => {
+  const register = async (data: RegisterData, authResponse?: AuthResponse) => {
     try {
-      const response = await authService.register(data);
+      const response = authResponse || await authService.register(data);
       await storageService.saveToken(response.token);
+      if (response.refreshToken) {
+        await storageService.setRefreshToken(response.refreshToken);
+      }
       await storageService.saveUserData(response.user);
       setUser(response.user);
     } catch (error) {

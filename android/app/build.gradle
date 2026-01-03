@@ -1,5 +1,9 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
+
+// Add react-native-config plugin BEFORE react plugin
+apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
+
 apply plugin: "com.facebook.react"
 
 /**
@@ -77,9 +81,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.testapp"
+    namespace "com.rentverse"
     defaultConfig {
-        applicationId "com.testapp"
+        applicationId "com.rentverse"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

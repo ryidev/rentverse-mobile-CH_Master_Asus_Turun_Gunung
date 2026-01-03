@@ -1,8 +1,10 @@
 export * from './colors';
+import { ENV } from '../config/env';
 
-export const API_BASE_URL = 'http://localhost:3000/api'; /// Ganti dengan URL API Anda
+export const API_BASE_URL = ENV.API_BASE_URL;
 export const STORAGE_KEYS = {
   AUTH_TOKEN: '@auth_token',
+  REFRESH_TOKEN: '@refresh_token',
   USER_DATA: '@user_data',
 };
 

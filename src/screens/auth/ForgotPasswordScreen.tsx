@@ -45,10 +45,10 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
     try {
       // TODO: Implement forgot password API call
       // await authService.forgotPassword(email);
-      
+
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 1500));
+
       Alert.alert(
         'Success',
         'Password reset link has been sent to your email. Please check your inbox.',
@@ -72,8 +72,8 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -106,14 +106,14 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email Address</Text>
             <View style={[
-              styles.inputWrapper, 
+              styles.inputWrapper,
               emailFocused ? styles.inputWrapperFocused : styles.inputWrapperUnfocused
             ]}>
-              <Icon 
-                name="mail-outline" 
-                size={20} 
-                color={emailFocused ? "#6366F1" : "#94A3B8"} 
-                style={styles.inputIcon} 
+              <Icon
+                name="mail-outline"
+                size={20}
+                color={emailFocused ? "#6366F1" : "#94A3B8"}
+                style={styles.inputIcon}
               />
               <TextInput
                 style={styles.input}
@@ -131,8 +131,8 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           {/* Reset Button */}
-          <TouchableOpacity 
-            style={[styles.resetButton, isLoading && styles.resetButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.resetButton, isLoading && styles.resetButtonDisabled]}
             onPress={handleResetPassword}
             disabled={isLoading}
           >
@@ -163,26 +163,26 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#FFFFFF' 
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF'
   },
-  scrollView: { 
-    flex: 1 
+  scrollView: {
+    flex: 1
   },
-  scrollContent: { 
-    flexGrow: 1, 
-    paddingBottom: 40 
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40
   },
-  header: { 
-    paddingHorizontal: 20, 
-    paddingTop: 10, 
-    paddingBottom: 20 
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20
   },
-  backButton: { 
-    width: 40, 
-    height: 40, 
-    justifyContent: 'center' 
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center'
   },
   iconSection: {
     alignItems: 'center',
@@ -196,36 +196,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  titleSection: { 
-    paddingHorizontal: 24, 
+  titleSection: {
+    paddingHorizontal: 24,
     marginBottom: 32,
     alignItems: 'center',
   },
-  heading: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#000', 
+  heading: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#000',
     marginBottom: 12,
     textAlign: 'center',
   },
-  subheading: { 
-    fontSize: 15, 
-    lineHeight: 22, 
+  subheading: {
+    fontSize: 15,
+    lineHeight: 22,
     color: '#64748B',
     textAlign: 'center',
     paddingHorizontal: 16,
   },
-  formSection: { 
-    paddingHorizontal: 24 
+  formSection: {
+    paddingHorizontal: 24
   },
-  inputGroup: { 
-    marginBottom: 24 
+  inputGroup: {
+    marginBottom: 24
   },
-  label: { 
-    fontSize: 14, 
-    fontWeight: '600', 
-    color: '#1E293B', 
-    marginBottom: 8 
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 8
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -235,21 +235,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     height: 56,
   },
-  inputWrapperFocused: { 
-    borderColor: '#6366F1', 
-    backgroundColor: '#F0F0FF' 
+  inputWrapperFocused: {
+    borderColor: '#6366F1',
+    backgroundColor: '#F0F0FF'
   },
-  inputWrapperUnfocused: { 
-    borderColor: '#F1F5F9', 
-    backgroundColor: '#F8FAF7' 
+  inputWrapperUnfocused: {
+    borderColor: '#F1F5F9',
+    backgroundColor: '#F8FAF7'
   },
-  inputIcon: { 
-    marginRight: 12 
+  inputIcon: {
+    marginRight: 12
   },
-  input: { 
-    flex: 1, 
-    fontSize: 16, 
-    color: '#000' 
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000'
   },
   resetButton: {
     backgroundColor: '#6366F1',
@@ -263,10 +263,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
     elevation: 0,
   },
-  resetButtonText: { 
-    color: '#FFF', 
-    fontSize: 18, 
-    fontWeight: '600' 
+  resetButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600'
   },
   backToLoginContainer: {
     flexDirection: 'row',

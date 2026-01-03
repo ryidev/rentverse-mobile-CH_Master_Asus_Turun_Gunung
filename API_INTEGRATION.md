@@ -2,15 +2,18 @@
 
 ## Base Configuration
 
-Update the API base URL in `src/constants/index.ts`:
+✅ **UPDATED:** API base URL sudah dikonfigurasi di `.env`:
 
-```typescript
-export const API_BASE_URL = 'https://your-api-url.com/api';
+```env
+API_BASE_URL=http://localhost:3000/api/v1/m
 ```
+
+File ini dibaca oleh `src/config/env.ts` menggunakan `react-native-config`.
 
 ## Authentication Flow
 
 ### 1. Register
+
 ```typescript
 POST /auth/register
 Content-Type: application/json
@@ -37,6 +40,7 @@ Response:
 ```
 
 ### 2. Login
+
 ```typescript
 POST /auth/login
 Content-Type: application/json
@@ -50,6 +54,7 @@ Response: Same as Register
 ```
 
 ### 3. Get Current User
+
 ```typescript
 GET /auth/me
 Authorization: Bearer {token}
@@ -68,6 +73,7 @@ Response:
 ## Property Management
 
 ### 1. Get Properties
+
 ```typescript
 GET /properties?page=1&limit=10&featured=false
 Authorization: Bearer {token}
@@ -102,6 +108,7 @@ Response:
 ```
 
 ### 2. Get Property Detail
+
 ```typescript
 GET /properties/:id
 Authorization: Bearer {token}
@@ -110,6 +117,7 @@ Response: Single property object (same structure as above)
 ```
 
 ### 3. Create Property
+
 ```typescript
 POST /properties
 Authorization: Bearer {token}
@@ -132,6 +140,7 @@ Response: Created property object
 ```
 
 ### 4. Update Property
+
 ```typescript
 PUT /properties/:id
 Authorization: Bearer {token}
@@ -142,6 +151,7 @@ Response: Updated property object
 ```
 
 ### 5. Upload Property Images
+
 ```typescript
 POST /properties/:id/images
 Authorization: Bearer {token}
@@ -159,6 +169,7 @@ Response:
 ## Reviews & Ratings
 
 ### 1. Get Property Reviews
+
 ```typescript
 GET /properties/:propertyId/reviews
 Authorization: Bearer {token}
@@ -182,6 +193,7 @@ Response:
 ```
 
 ### 2. Create Review
+
 ```typescript
 POST /reviews
 Authorization: Bearer {token}
@@ -199,6 +211,7 @@ Response: Created review object
 ## Favorites
 
 ### 1. Get Favorites
+
 ```typescript
 GET /favorites
 Authorization: Bearer {token}
@@ -216,6 +229,7 @@ Response:
 ```
 
 ### 2. Add to Favorites
+
 ```typescript
 POST /favorites
 Authorization: Bearer {token}
@@ -229,6 +243,7 @@ Response: Created favorite object
 ```
 
 ### 3. Remove from Favorites
+
 ```typescript
 DELETE /favorites/:id
 Authorization: Bearer {token}
@@ -237,6 +252,7 @@ Response: 204 No Content
 ```
 
 ### 4. Check if Favorited
+
 ```typescript
 GET /favorites/check/:propertyId
 Authorization: Bearer {token}
@@ -250,6 +266,7 @@ Response:
 ## Bookings
 
 ### 1. Get Bookings
+
 ```typescript
 GET /bookings
 Authorization: Bearer {token}
@@ -272,6 +289,7 @@ Response:
 ```
 
 ### 2. Create Booking
+
 ```typescript
 POST /bookings
 Authorization: Bearer {token}
@@ -288,6 +306,7 @@ Response: Created booking object
 ```
 
 ### 3. Cancel Booking
+
 ```typescript
 PATCH /bookings/:id/cancel
 Authorization: Bearer {token}
@@ -298,6 +317,7 @@ Response: Updated booking object with status "cancelled"
 ## AI Features (Optional)
 
 ### Predict Property Price
+
 ```typescript
 POST /properties/predict-price
 Authorization: Bearer {token}
@@ -368,9 +388,73 @@ Response:
 }
 ```
 
+## ✨ NEW: Refresh Token
+
+```typescript
+POST /auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "refresh-token-here"
+}
+
+Response:
+{
+  "token": "new-jwt-token",
+  "refreshToken": "new-refresh-token",
+  "user": { ... }
+}
+```
+
+**Implementation:**
+
+- Automatically called when access token expires (401 error)
+- Handled by axios interceptor in `api.ts`
+- Queues failed requests and retries after refresh
+- If refresh fails, user is logged out automatically
+
+## ✨ NEW: Google OAuth
+
+```typescript
+POST /auth/google
+Content-Type: application/json
+
+{
+  "idToken": "google-id-token-from-sign-in"
+}
+
+Response:
+{
+  "user": {
+    "id": "user-id",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "avatar": "https://...",
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  "token": "jwt-token-here",
+  "refreshToken": "refresh-token-here"
+}
+```
+
+**Implementation:**
+
+- User clicks "Sign in with Google" button
+- Google Sign-In popup appears
+- App receives Google ID token
+- Send ID token to backend for verification
+- Backend verifies with Google and returns JWT
+- User is automatically logged in
+
+**Setup Required:**
+See [ENV_OAUTH_SETUP.md](./ENV_OAUTH_SETUP.md) for complete setup instructions.
+
 ## Notes
 
 - All authenticated requests require `Authorization: Bearer {token}` header
 - Token is stored in AsyncStorage after login/register
 - Token is automatically added to requests by the API service
-- On 401 errors, the app automatically logs out the user
+- On 401 errors, the app automatically attempts token refresh
+- If refresh fails, user is logged out automatically
+- Refresh tokens are stored securely in AsyncStorage
+- OAuth requires Google Client ID configuration in `.env`
