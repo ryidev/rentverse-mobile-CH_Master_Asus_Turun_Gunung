@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -22,6 +23,8 @@ interface Props {
 }
 
 const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  
   // Animation values
   const fadeAnims = useRef([
     new Animated.Value(0),
@@ -71,14 +74,14 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.text === '#FFFFFF' ? 'light-content' : 'dark-content'} />
       
       {/* Property Images Grid */}
       <View style={styles.imageGrid}>
         {/* Row 1 */}
         <View style={styles.row}>
-          <Animated.View style={[styles.imageContainer, styles.largeImage, { opacity: fadeAnims[0] }]}>
+          <Animated.View style={[styles.imageContainer, styles.largeImage, { opacity: fadeAnims[0], backgroundColor: colors.surface }]}>
             <Image
               source={{ uri: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400' }}
               style={styles.image}
@@ -156,8 +159,8 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
           }
         ]}
       >
-        <Text style={styles.heading}>Ready to start a new chapter?</Text>
-        <Text style={styles.subheading}>RentVerse is here to guide you home</Text>
+        <Text style={[styles.heading, { color: colors.text }]}>Ready to start a new chapter?</Text>
+        <Text style={[styles.subheading, { color: colors.text }]}>RentVerse is here to guide you home</Text>
       </Animated.View>
 
       {/* Buttons */}
@@ -170,12 +173,12 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
           }
         ]}
       >
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <TouchableOpacity style={[styles.loginButton, { backgroundColor: colors.primary }]} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Log in</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
-          <Text style={styles.signupButtonText}>Sign up</Text>
+        <TouchableOpacity style={[styles.signupButton, { borderColor: colors.border }]} onPress={handleSignup}>
+          <Text style={[styles.signupButtonText, { color: colors.text }]}>Sign up</Text>
         </TouchableOpacity>
       </Animated.View>
     </SafeAreaView>
@@ -185,7 +188,6 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   imageGrid: {
     paddingHorizontal: 16,
@@ -203,7 +205,6 @@ const styles = StyleSheet.create({
   imageContainer: {
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#F5F5F5',
   },
   largeImage: {
     width: (width - 44) * 0.4,
@@ -235,14 +236,12 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 23,
     fontWeight: '600',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 12,
   },
   subheading: {
     fontSize: 20,
     fontWeight: '300',
-    color: '#000000',
     textAlign: 'center',
   },
   buttonContainer: {
@@ -251,7 +250,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   loginButton: {
-    backgroundColor: '#0F6980',
     borderRadius: 28,
     paddingVertical: 16,
     alignItems: 'center',
@@ -267,15 +265,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   signupButton: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 28,
     paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
   },
   signupButtonText: {
-    color: '#1F2937',
     fontSize: 18,
     fontWeight: '600',
   },

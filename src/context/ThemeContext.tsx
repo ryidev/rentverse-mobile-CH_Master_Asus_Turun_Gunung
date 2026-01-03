@@ -12,9 +12,9 @@ interface ThemeContextType {
 }
 
 const lightColors = {
-  primary: '#FF385C',
+  primary: '#0F6980',
   secondary: '#00A699',
-  accent: '#FC642D',
+  accent: '#0A9396',
   
   background: '#FFFFFF',
   surface: '#F7F7F7',

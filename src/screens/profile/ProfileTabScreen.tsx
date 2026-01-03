@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../../context/ThemeContext';
 
 const ProfileTabScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
 
   const menuItems = [
     { id: 1, icon: 'person-outline', title: 'Personal details', screen: 'Personal' },
@@ -14,7 +16,7 @@ const ProfileTabScreen: React.FC = () => {
   ];
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Profile Header */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
@@ -23,11 +25,11 @@ const ProfileTabScreen: React.FC = () => {
             style={styles.avatar}
           />
         </View>
-        <Text style={styles.name}>Asus Turun Gunung</Text>
-        <Text style={styles.email}>asusturungunung@gmail.com</Text>
+        <Text style={[styles.name, { color: colors.text }]}>Asus Turun Gunung</Text>
+        <Text style={[styles.email, { color: colors.textSecondary }]}>asusturungunung@gmail.com</Text>
       </View>
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: colors.divider }]} />
 
       {/* Menu Items */}
       <View style={styles.menuSection}>
@@ -41,11 +43,11 @@ const ProfileTabScreen: React.FC = () => {
               }
             }}
           >
-            <View style={styles.iconContainer}>
-              <Icon name={item.icon} size={24} color="#000" />
+            <View style={[styles.iconContainer, { backgroundColor: colors.card }]}>
+              <Icon name={item.icon} size={24} color={colors.text} />
             </View>
-            <Text style={styles.menuText}>{item.title}</Text>
-            <Icon name="chevron-forward" size={24} color="#94A3B8" />
+            <Text style={[styles.menuText, { color: colors.text }]}>{item.title}</Text>
+            <Icon name="chevron-forward" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         ))}
       </View>
@@ -72,7 +74,6 @@ const ProfileTabScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     alignItems: 'center',
@@ -100,16 +101,13 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
     marginBottom: 8,
   },
   email: {
     fontSize: 13,
-    color: '#64748B',
   },
   divider: {
     height: 1,
-    backgroundColor: '#dadadaff',
     marginHorizontal: 24,
     marginVertical: 10,
   },
@@ -126,7 +124,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -139,7 +136,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: '#000',
   },
   bottomSpace: {
     height: 100,

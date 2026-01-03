@@ -12,11 +12,12 @@ import {
 import { launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Input, Button } from '../../components';
-import { Colors } from '../../constants';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const PersonalScreen: React.FC = () => {
   const { user, updateProfile } = useAuth();
+  const { colors } = useTheme();
   
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -173,35 +174,35 @@ const PersonalScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
         {/* Profile Picture Section */}
         <View style={styles.profileSection}>
           <View style={styles.imageContainer}>
             {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              <Image source={{ uri: profileImage }} style={[styles.profileImage, { borderColor: colors.primary }]} />
             ) : (
-              <View style={[styles.profileImage, styles.placeholderImage]}>
-                <Icon name="account" size={60} color={Colors.textSecondary} />
+              <View style={[styles.profileImage, styles.placeholderImage, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+                <Icon name="account" size={60} color={colors.textSecondary} />
               </View>
             )}
             
             <TouchableOpacity
-              style={styles.editImageButton}
+              style={[styles.editImageButton, { backgroundColor: colors.card, borderColor: colors.card }]}
               onPress={handleImagePicker}
               activeOpacity={0.7}
             >
-              <Icon name="camera" size={20} color={Colors.primary} />
+              <Icon name="camera" size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
           
-          <Text style={styles.profileName}>{name || 'Your Name'}</Text>
-          <Text style={styles.profileEmail}>{email || 'your.email@example.com'}</Text>
+          <Text style={[styles.profileName, { color: colors.text }]}>{name || 'Your Name'}</Text>
+          <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{email || 'your.email@example.com'}</Text>
         </View>
 
         {/* Form Section */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Personal Information</Text>
           
           <Input
             label="Full Name"
@@ -251,8 +252,8 @@ const PersonalScreen: React.FC = () => {
 
         {/* Password Section */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Change Password</Text>
-          <Text style={styles.sectionSubtitle}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Change Password</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
             Leave blank if you don't want to change your password
           </Text>
 
@@ -336,7 +337,6 @@ const PersonalScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   content: {
     padding: 20,
@@ -355,10 +355,8 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
-    borderColor: Colors.primary,
   },
   placeholderImage: {
-    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -366,17 +364,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: Colors.white,
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: Colors.white,
     ...Platform.select({
       ios: {
-        shadowColor: Colors.black,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
@@ -389,12 +385,10 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.text,
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 14,
-    color: Colors.textSecondary,
   },
   formSection: {
     marginBottom: 24,
@@ -402,12 +396,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.text,
     marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: Colors.textSecondary,
     marginBottom: 16,
   },
   inputContainer: {

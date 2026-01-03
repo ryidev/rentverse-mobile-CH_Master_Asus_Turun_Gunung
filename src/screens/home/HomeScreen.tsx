@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../../context/ThemeContext';
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [selectedTab, setSelectedTab] = useState<'rent' | 'buy'>('rent');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
@@ -135,7 +137,7 @@ const HomeScreen: React.FC = () => {
   const renderPropertyCard = (property: any) => (
     <TouchableOpacity 
       key={property.id} 
-      style={styles.propertyCard}
+      style={[styles.propertyCard, { backgroundColor: colors.card }]}
       onPress={() => (navigation as any).navigate('PropertyDetailFull', { property })}
       activeOpacity={0.9}
     >
@@ -157,33 +159,33 @@ const HomeScreen: React.FC = () => {
       <View style={styles.propertyInfo}>
         <View style={styles.ratingRow}>
           <Icon name="star" size={16} color="#FFB800" />
-          <Text style={styles.ratingText}>{property.rating}</Text>
-          <Text style={styles.reviewsText}>({property.reviews})</Text>
+          <Text style={[styles.ratingText, { color: colors.text }]}>{property.rating}</Text>
+          <Text style={[styles.reviewsText, { color: colors.textSecondary }]}>({property.reviews})</Text>
         </View>
-        <Text style={styles.propertyTitle} numberOfLines={2}>
+        <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={2}>
           {property.title}
         </Text>
-        <Text style={styles.locationSubtext}>{property.location}</Text>
+        <Text style={[styles.locationSubtext, { color: colors.textSecondary }]}>{property.location}</Text>
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
-            <Icon name="bed-outline" size={16} color="#64748B" />
-            <Text style={styles.detailText}>{property.rooms} room</Text>
+            <Icon name="bed-outline" size={16} color={colors.textSecondary} />
+            <Text style={[styles.detailText, { color: colors.textSecondary }]}>{property.rooms} room</Text>
           </View>
           <View style={styles.detailItem}>
-            <Icon name="resize-outline" size={16} color="#64748B" />
-            <Text style={styles.detailText}>{property.area} m²</Text>
+            <Icon name="resize-outline" size={16} color={colors.textSecondary} />
+            <Text style={[styles.detailText, { color: colors.textSecondary }]}>{property.area} m²</Text>
           </View>
         </View>
-        <Text style={styles.priceText}>
+        <Text style={[styles.priceText, { color: colors.text }]}>
           ${property.price}
-          <Text style={styles.priceUnit}> /month</Text>
+          <Text style={[styles.priceUnit, { color: colors.textSecondary }]}> /month</Text>
         </Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Header Section */}
       <View style={styles.headerSection}>
         <Animated.View 
@@ -196,11 +198,11 @@ const HomeScreen: React.FC = () => {
           ]}
         >
           <View style={styles.locationContainer}>
-            <Text style={styles.findText}>Find your place in</Text>
+            <Text style={[styles.findText, { color: colors.textSecondary }]}>Find your place in</Text>
             <View style={styles.locationRow}>
               <Icon name="location" size={20} color="#0F6980" />
-              <Text style={styles.locationText}>Surabaya, Indonesia</Text>
-              <Icon name="chevron-down" size={20} color="#000" />
+              <Text style={[styles.locationText, { color: colors.text }]}>Surabaya, Indonesia</Text>
+              <Icon name="chevron-down" size={20} color={colors.text} />
             </View>
           </View>
           <View style={styles.avatarContainer}>
@@ -216,19 +218,20 @@ const HomeScreen: React.FC = () => {
           style={[
             styles.searchContainer,
             {
+              backgroundColor: colors.surface,
               opacity: fadeAnim,
               transform: [{ scale: scaleSearchAnim }]
             }
           ]}
         >
-          <Icon name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
+          <Icon name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search address, city, location"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textSecondary}
           />
           <TouchableOpacity style={styles.filterButton}>
-            <Icon name="options-outline" size={20} color="#000" />
+            <Icon name="options-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -246,8 +249,8 @@ const HomeScreen: React.FC = () => {
       >
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Near your location</Text>
-            <Text style={styles.sectionSubtitle}>243 properties in Surabaya</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Near your location</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>243 properties in Surabaya</Text>
           </View>
           <TouchableOpacity>
             <Text style={styles.seeAllText}>See all</Text>
@@ -270,7 +273,7 @@ const HomeScreen: React.FC = () => {
       >
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Top rated in Surabaya</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Top rated in Surabaya</Text>
           </View>
           <TouchableOpacity>
             <Text style={styles.seeAllText}>See all</Text>
@@ -293,7 +296,7 @@ const HomeScreen: React.FC = () => {
       >
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>your favorites</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>your favorites</Text>
           </View>
           <TouchableOpacity>
             <Text style={styles.seeAllText}>See all</Text>
@@ -305,9 +308,9 @@ const HomeScreen: React.FC = () => {
           </ScrollView>
         ) : (
           <View style={styles.emptyFavContainer}>
-            <Icon name="heart-outline" size={48} color="#CBD5E1" />
-            <Text style={styles.emptyFavText}>No favorites yet</Text>
-            <Text style={styles.emptyFavSubtext}>Tap the heart icon to save properties</Text>
+            <Icon name="heart-outline" size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyFavText, { color: colors.textSecondary }]}>No favorites yet</Text>
+            <Text style={[styles.emptyFavSubtext, { color: colors.textSecondary }]}>Tap the heart icon to save properties</Text>
           </View>
         )}
       </Animated.View>
@@ -318,7 +321,6 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   headerSection: {
     padding: 16,
@@ -337,7 +339,6 @@ const styles = StyleSheet.create({
   },
   findText: {
     fontSize: 14,
-    color: '#64748B',
     marginBottom: 4,
   },
   locationRow: {
@@ -348,7 +349,6 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
   },
   avatarContainer: {
     width: 48,
@@ -363,7 +363,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
     borderRadius: 50,
     paddingHorizontal: 16,
     height: 52,
@@ -374,7 +373,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#000',
   },
   filterButton: {
     padding: 4,
@@ -382,7 +380,6 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 12,
   },
   tabContainer: {
@@ -420,11 +417,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748B',
     marginTop: 2,
   },
   seeAllText: {
@@ -439,7 +434,6 @@ const styles = StyleSheet.create({
     width: 280,
     marginRight: 16,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -475,24 +469,20 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
     marginLeft: 4,
   },
   reviewsText: {
     fontSize: 14,
-    color: '#64748B',
     marginLeft: 2,
   },
   propertyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 4,
     lineHeight: 22,
   },
   locationSubtext: {
     fontSize: 14,
-    color: '#64748B',
     marginBottom: 8,
   },
   detailsRow: {
@@ -508,17 +498,14 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#64748B',
   },
   priceText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
   },
   priceUnit: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#64748B',
   },
   emptyFavContainer: {
     alignItems: 'center',
@@ -529,12 +516,10 @@ const styles = StyleSheet.create({
   emptyFavText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748B',
     marginTop: 12,
   },
   emptyFavSubtext: {
     fontSize: 14,
-    color: '#94A3B8',
     marginTop: 4,
   },
 });

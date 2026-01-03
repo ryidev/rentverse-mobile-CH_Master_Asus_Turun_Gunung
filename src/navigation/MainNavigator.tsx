@@ -6,16 +6,19 @@ import ExploreNavigator from './ExploreNavigator';
 import HomeStackNavigator from './HomeStackNavigator';
 import ProfileNavigator from './ProfileNavigator';
 import SavedScreen from '../screens/home/SavedScreen';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainNavigator: React.FC = () => {
+  const { colors } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#6366F1',
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
           fontSize: 13,
@@ -24,9 +27,9 @@ const MainNavigator: React.FC = () => {
           marginBottom: 8,
         },
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.card,
           borderTopWidth: 1,
-          borderTopColor: '#F1F5F9',
+          borderTopColor: colors.border,
           height: 75,
           paddingTop: 8,
           paddingBottom: 12,

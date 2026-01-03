@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../../context/ThemeContext';
 
 const ExploreScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [selectedTab, setSelectedTab] = useState<'rent' | 'buy'>('rent');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
@@ -86,14 +88,14 @@ const ExploreScreen: React.FC = () => {
   const renderPropertyCard = (property: any) => (
     <TouchableOpacity 
       key={property.id} 
-      style={styles.propertyCard}
+      style={[styles.propertyCard, { backgroundColor: colors.card }]}
       onPress={() => (navigation as any).navigate('PropertyDetailFull', { property })}
       activeOpacity={0.9}
     >
       <Image source={{ uri: property.image }} style={styles.propertyImage} />
       <View style={styles.propertyInfo}>
         
-        <Text style={styles.propertyTitle} numberOfLines={2}>
+        <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={2}>
           {property.title}
         </Text>
         <View style={styles.rentedRow}>
@@ -106,14 +108,14 @@ const ExploreScreen: React.FC = () => {
   const renderPropertyCard1 = (property: any) => (
     <TouchableOpacity 
       key={property.id} 
-      style={styles.propertyCard1}
+      style={[styles.propertyCard1, { backgroundColor: colors.card }]}
       onPress={() => (navigation as any).navigate('PropertyDetailFull', { property })}
       activeOpacity={0.9}
     >
       <Image source={{ uri: property.image }} style={styles.propertyImage} />
       <View style={styles.propertyInfo}>
         
-        <Text style={styles.propertyTitle} numberOfLines={2}>
+        <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={2}>
           {property.title}
         </Text>
  
@@ -122,25 +124,26 @@ const ExploreScreen: React.FC = () => {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Search Bar */}
       <Animated.View 
         style={[
           styles.searchContainer,
           {
+            backgroundColor: colors.surface,
             opacity: fadeAnim,
             transform: [{ scale: scaleAnim }]
           }
         ]}
       >
-        <Icon name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
+        <Icon name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search address, city, location"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textSecondary}
         />
         <TouchableOpacity style={styles.filterButton}>
-          <Icon name="options-outline" size={20} color="#000" />
+          <Icon name="options-outline" size={20} color={colors.text} />
         </TouchableOpacity>
       </Animated.View>
       <Animated.View 
@@ -154,7 +157,7 @@ const ExploreScreen: React.FC = () => {
       >
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Find your next trip!</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Find your next trip!</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('ExploreDetail' as never)}>
             <Text style={styles.seeAllText}>See all</Text>
@@ -177,7 +180,7 @@ const ExploreScreen: React.FC = () => {
       >
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Exploring about your living style?</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Exploring about your living style?</Text>
           </View>
           
         </View>
@@ -192,7 +195,6 @@ const ExploreScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   headerSection: {
     padding: 16,
@@ -209,7 +211,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',//
     borderRadius: 50,
     paddingHorizontal: 26,
     marginHorizontal: 16,
@@ -222,7 +223,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#000',
   },
   filterButton: {
     padding: 4,
@@ -230,7 +230,6 @@ const styles = StyleSheet.create({
   questionText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 12,
   },
   tabContainer: {
@@ -269,11 +268,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
     fontWeight: '600',
-    color: '#000',
   },
   sectionSubtitle: {
     fontSize: 13,
-    color: '#64748B',
     marginTop: 2,
   },
   seeAllText: {
@@ -288,7 +285,6 @@ const styles = StyleSheet.create({
     width: 175,
     marginRight: 26,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -299,7 +295,6 @@ const styles = StyleSheet.create({
     width: 240,
     marginRight: 26,
     borderRadius: 16,
-    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -335,24 +330,20 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
     marginLeft: 4,
   },
   reviewsText: {
     fontSize: 14,
-    color: '#64748B',
     marginLeft: 2,
   },
   propertyTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 4,
     lineHeight: 22,
   },
   locationSubtext: {
     fontSize: 14,
-    color: '#64748B',
     marginBottom: 8,
   },
   detailsRow: {
@@ -368,21 +359,17 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#64748B',
   },
   priceText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
   },
   priceUnit: {
     fontSize: 14,
     fontWeight: '400',
-    color: '#64748B',
   },
   emptyFavText: {
     fontSize: 15,
-    color: '#94A3B8',
     fontStyle: 'italic',
     paddingVertical: 20,
   },

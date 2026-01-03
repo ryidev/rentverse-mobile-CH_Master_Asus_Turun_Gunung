@@ -3,7 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from '../screens/home/HomeScreen';
 import PropertyDetailFullScreen from '../screens/property/PropertyDetailFullScreen';
 import RentBookingScreen from '../screens/booking/RentBookingScreen';
-import { Colors } from '../constants';
+import { useTheme } from '../context/ThemeContext';
 
 export type HomeStackParamList = {
   HomeMain: undefined;
@@ -14,17 +14,19 @@ export type HomeStackParamList = {
 const Stack = createStackNavigator<HomeStackParamList>();
 
 const HomeStackNavigator: React.FC = () => {
+  const { colors } = useTheme();
+  
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: Colors.white,
+          backgroundColor: colors.background,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
+          borderBottomColor: colors.border,
         },
-        headerTintColor: Colors.text,
+        headerTintColor: colors.text,
         headerTitleStyle: {
           fontWeight: '600',
         },

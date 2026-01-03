@@ -7,7 +7,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { Colors } from '../constants';
+import { useTheme } from '../context/ThemeContext';
 
 interface ButtonProps {
   title: string;
@@ -30,6 +30,8 @@ const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors } = useTheme();
+  
   const getButtonStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
       borderRadius: 8,
@@ -46,12 +48,12 @@ const Button: React.FC<ButtonProps> = ({
 
     // Variant styles
     const variantStyles: { [key: string]: ViewStyle } = {
-      primary: { backgroundColor: Colors.primary },
-      secondary: { backgroundColor: Colors.secondary },
+      primary: { backgroundColor: colors.primary },
+      secondary: { backgroundColor: colors.secondary },
       outline: {
         backgroundColor: 'transparent',
         borderWidth: 1,
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
       },
     };
 
@@ -75,9 +77,9 @@ const Button: React.FC<ButtonProps> = ({
     };
 
     const variantTextStyles: { [key: string]: TextStyle } = {
-      primary: { color: Colors.white },
-      secondary: { color: Colors.white },
-      outline: { color: Colors.primary },
+      primary: { color: colors.white },
+      secondary: { color: colors.white },
+      outline: { color: colors.primary },
     };
 
     return {
@@ -96,7 +98,7 @@ const Button: React.FC<ButtonProps> = ({
     >
       {isLoading ? (
         <ActivityIndicator
-          color={variant === 'outline' ? Colors.primary : Colors.white}
+          color={variant === 'outline' ? colors.primary : colors.white}
         />
       ) : (
         <Text style={[getTextStyle(), textStyle]}>{title}</Text>

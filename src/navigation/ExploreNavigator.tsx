@@ -4,7 +4,7 @@ import ExploreScreen from '../screens/explore/ExploreScreen';
 import ExploreDetail from '../screens/explore/ExploreDetail';
 import PropertyDetailFullScreen from '../screens/property/PropertyDetailFullScreen';
 import RentBookingScreen from '../screens/booking/RentBookingScreen';
-import { Colors } from '../constants';
+import { useTheme } from '../context/ThemeContext';
 
 export type ExploreStackParamList = {
   ExploreScreen: undefined;
@@ -16,17 +16,19 @@ export type ExploreStackParamList = {
 const Stack = createStackNavigator<ExploreStackParamList>();
 
 const ExploreNavigator: React.FC = () => {
+  const { colors } = useTheme();
+  
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: Colors.white,
+          backgroundColor: colors.background,
           elevation: 0,
           shadowOpacity: 0,
           borderBottomWidth: 1,
-          borderBottomColor: Colors.border,
+          borderBottomColor: colors.border,
         },
-        headerTintColor: Colors.text,
+        headerTintColor: colors.text,
         headerTitleStyle: {
           fontWeight: '600',
         },

@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../types';
 import { CommonActions } from '@react-navigation/native';
+import { useTheme } from '../../context/ThemeContext';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -23,6 +24,8 @@ interface Props {
 }
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailFocused, setEmailFocused] = useState(false);
@@ -71,8 +74,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.background === '#FFFFFF' ? 'dark-content' : 'light-content'} />
       
       <ScrollView 
         style={styles.scrollView}
@@ -82,7 +85,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#000" />
+            <Icon name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -96,8 +99,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             }
           ]}
         >
-          <Text style={styles.heading}>Welcome Back!</Text>
-          <Text style={styles.subheading}>
+          <Text style={[styles.heading, { color: colors.text }]}>Welcome Back!</Text>
+          <Text style={[styles.subheading, { color: colors.textSecondary }]}>
             Log In to your Placoo account to explore your dream place to live across the whole world!
           </Text>
         </Animated.View>
@@ -115,21 +118,24 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           
           {/* Username/Email Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Username</Text>
             <View style={[
               styles.inputWrapper, 
-              emailFocused ? styles.inputWrapperFocused : styles.inputWrapperUnfocused
+              { 
+                backgroundColor: emailFocused ? colors.surface : colors.card,
+                borderColor: emailFocused ? colors.primary : colors.border
+              }
             ]}>
               <Icon 
                 name="person-outline" 
                 size={20} 
-                color={emailFocused ? "#6366F1" : "#94A3B8"} 
+                color={emailFocused ? colors.primary : colors.textSecondary} 
                 style={styles.inputIcon} 
               />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 placeholder="example@gmail.com"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textLight}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -142,21 +148,24 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* Password Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Password</Text>
             <View style={[
               styles.inputWrapper, 
-              passwordFocused ? styles.inputWrapperFocused : styles.inputWrapperUnfocused
+              { 
+                backgroundColor: passwordFocused ? colors.surface : colors.card,
+                borderColor: passwordFocused ? colors.primary : colors.border
+              }
             ]}>
               <Icon 
                 name="lock-closed-outline" 
                 size={20} 
-                color={passwordFocused ? "#6366F1" : "#94A3B8"} 
+                color={passwordFocused ? colors.primary : colors.textSecondary} 
                 style={styles.inputIcon} 
               />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 placeholder="Insert your password here"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textLight}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -171,7 +180,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
                 <Icon 
                   name={showPassword ? "eye-off-outline" : "eye-outline"}
                   size={20} 
-                  color={passwordFocused ? "#6366F1" : "#94A3B8"}
+                  color={passwordFocused ? colors.primary : colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -179,7 +188,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* Login Button */}
           <TouchableOpacity 
-            style={styles.loginButton} 
+            style={[styles.loginButton, { backgroundColor: colors.primary }]} 
             onPress={handleLogin}
           >
             <Text style={styles.loginButtonText}>Log in</Text>
@@ -190,26 +199,26 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             onPress={() => navigation.navigate('ForgotPassword')} 
             style={styles.forgotPasswordContainer}
           >
-            <Text style={styles.forgotPassword}>Forgot password?</Text>
+            <Text style={[styles.forgotPassword, { color: colors.textSecondary }]}>Forgot password?</Text>
           </TouchableOpacity>
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
-          <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn}>
+          <TouchableOpacity style={[styles.googleButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleGoogleSignIn}>
             <Icon name="logo-google" size={20} color="#DB4437" />
-            <Text style={styles.googleButtonText}>Sign in with Google</Text>
+            <Text style={[styles.googleButtonText, { color: colors.text }]}>Sign in with Google</Text>
           </TouchableOpacity>
 
           {/* Sign Up Link */}
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
+            <Text style={[styles.signupText, { color: colors.textSecondary }]}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.signupLink}>Sign Up</Text>
+              <Text style={[styles.signupLink, { color: colors.primary }]}>Sign Up</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -221,17 +230,17 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 40 },
   header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30 },
   backButton: { width: 40, height: 40, justifyContent: 'center' },
   welcomeSection: { paddingHorizontal: 24, marginBottom: 32 },
-  heading: { fontSize: 32, fontWeight: 'bold', color: '#000', marginBottom: 8 },
-  subheading: { fontSize: 15, lineHeight: 22, color: '#64748B', marginBottom:15},
+  heading: { fontSize: 32, fontWeight: 'bold', marginBottom: 8 },
+  subheading: { fontSize: 15, lineHeight: 22, marginBottom:15},
   formSection: { paddingHorizontal: 24 },
   inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -240,16 +249,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     height: 56,
   },
-  inputWrapperFocused: { borderColor: '#6366F1', backgroundColor: '#F0F0FF' },
-  inputWrapperUnfocused: { borderColor: '#F1F5F9', backgroundColor: '#F8FAF7' },
   inputIcon: { marginRight: 12 },
-  input: { flex: 1, fontSize: 16, color: '#000' },
+  input: { flex: 1, fontSize: 16 },
   eyeButton: {
     padding: 4,
     marginLeft: 8,
   },
   loginButton: {
-    backgroundColor: '#0F6980',
     borderRadius: 28,
     paddingVertical: 16,
     alignItems: 'center',
@@ -261,27 +267,24 @@ const styles = StyleSheet.create({
     marginTop:12,
   },
   loginButtonDisabled: {
-    backgroundColor: '#9CA3AF',
     elevation: 0,
   },
   loginButtonText: { color: '#FFF', fontSize: 18, fontWeight: '600' },
   forgotPasswordContainer: { alignItems: 'center', marginTop: 16 },
-  forgotPassword: { fontSize: 15, color: '#64748B' },
+  forgotPassword: { fontSize: 15 },
   dividerContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 30 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  dividerText: { fontSize: 14, color: '#94A3B8', marginHorizontal: 16 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 14, marginHorizontal: 16 },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF',
     borderRadius: 28,
     paddingVertical: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     gap: 12,
   },
-  googleButtonText: { fontSize: 16, fontWeight: '600', color: '#1F2937' },
+  googleButtonText: { fontSize: 16, fontWeight: '600' },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -290,11 +293,9 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 15,
-    color: '#64748B',
   },
   signupLink: {
     fontSize: 15,
-    color: '#6366F1',
     fontWeight: '600',
   },
 });
