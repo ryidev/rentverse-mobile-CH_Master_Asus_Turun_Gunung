@@ -63,6 +63,78 @@ export const propertyService = {
     };
   },
 
+  async getTopRatedProperties(params?: {
+    city?: string;
+    limit?: number;
+    minRating?: number;
+  }): Promise<{ properties: Property[]; total: number }> {
+    const response = await apiService.get<{
+      success: boolean;
+      data: {
+        properties: Property[];
+        count: number;
+      }
+    }>('/properties/top-rated', {
+      params,
+    });
+    return {
+      properties: response.data.properties,
+      total: response.data.count,
+    };
+  },
+
+  async getPropertyStats(params?: {
+    city?: string;
+    state?: string;
+    country?: string;
+  }): Promise<{ total: number; byCity: Array<{ city: string; count: number }> }> {
+    const response = await apiService.get<{
+      success: boolean;
+      data: {
+        total: number;
+        byCity: Array<{ city: string; count: number }>;
+      }
+    }>('/properties/stats', {
+      params,
+    });
+    return response.data;
+  },
+
+  async getUserFavorites(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<{ properties: Property[]; total: number }> {
+    const response = await apiService.get<{
+      success: boolean;
+      data: {
+        favorites: Property[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+      }
+    }>('/users/favorites', {
+      params,
+    });
+    return {
+      properties: response.data.favorites,
+      total: response.data.pagination.total,
+    };
+  },
+
+  async toggleFavorite(propertyId: string): Promise<{ isFavorited: boolean }> {
+    const response = await apiService.post<{
+      success: boolean;
+      data: {
+        isFavorited: boolean;
+      };
+    }>(`/properties/${propertyId}/favorite`, {});
+    return response.data;
+  },
+
+
   async getPropertyById(id: string): Promise<Property> {
     return apiService.get<Property>(`/properties/${id}`);
   },
