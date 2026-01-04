@@ -8,16 +8,39 @@ import {
   TextInput,
   Image,
   Animated,
+  ActivityIndicator,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
+import MapViewComponent from '../../components/MapView';
+import FilterModal, { FilterValues } from '../../components/FilterModal';
+import { propertyService } from '../../services/propertyService';
+import { Property } from '../../types';
+import { PropertyCardSkeleton, CategoryCardSkeleton } from '../../components/SkeletonLoader';
 
 const ExploreScreen: React.FC = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const [selectedTab, setSelectedTab] = useState<'rent' | 'buy'>('rent');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [nearbyProperties, setNearbyProperties] = useState<Property[]>([]);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingNearby, setLoadingNearby] = useState(false);
+  const [amenityCategories, setAmenityCategories] = useState<Array<{ id: string; name: string; description?: string }>>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filters, setFilters] = useState<FilterValues>({
+    page: 1,
+    limit: 100, // Increased limit to show more properties on map
+    sortBy: 'newest',
+  });
 
   // Animation values
   const fadeAnim = new Animated.Value(0);
@@ -43,90 +66,157 @@ const ExploreScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Get user location and fetch nearby properties
+    requestLocationAndFetchNearby();
+    fetchAmenityCategories();
   }, []);
 
-  // Dummy data
-  const nearProperties = [
-    {
-      id: '1',
-      image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400',
-      title: 'Cabin in Suraya',
-      rented: 526,
-    },
-    {
-      id: '2',
-      image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
-      title: 'Modern Beach House',
-      rented: 750,
-    },
-    {
-      id: '3',
-      image: 'https://31sudirmansuites.com/wp-content/uploads/2019/11/FEATURED_10_20191115031104-814x534-1.jpg',
-      title: 'Modern Apartmen',
-      rented: 7989,
-    },
-  ];
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchProperties();
+    }, 300); // Debounce search
 
-  const topRatedProperties = [
-    {
-      id: '4',
-      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400',
-      title: 'Beach',
-    },
-    {
-      id: '5',
-      image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400',
-      title: 'Luxury ',
-    },
-    {
-      id:'6',
-      image: 'https://www.laconservancy.org/wp-content/uploads/2022/10/JapaneseHouse_KellySutherlinMcLeodArchitectureInc.jpg',
-      title: 'Japanese',
-    },
-  ];
+    return () => clearTimeout(timeoutId);
+  }, [filters.city, filters.minPrice, filters.maxPrice, filters.bedrooms, filters.bathrooms, filters.amenities, filters.sortBy, searchText]);
 
-  const renderPropertyCard = (property: any) => (
-    <TouchableOpacity 
-      key={property.id} 
-      style={[styles.propertyCard, { backgroundColor: colors.card }]}
-      onPress={() => (navigation as any).navigate('PropertyDetailFull', { property })}
-      activeOpacity={0.9}
-    >
-      <Image source={{ uri: property.image }} style={styles.propertyImage} />
-      <View style={styles.propertyInfo}>
-        
-        <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={2}>
-          {property.title}
-        </Text>
-        <View style={styles.rentedRow}>
-          <Icon name="people-outline" size={14} color="#0F6980" />
-          <Text style={styles.rentedText}>{property.rented} people rented</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-  const renderPropertyCard1 = (property: any) => (
-    <TouchableOpacity 
-      key={property.id} 
-      style={[styles.propertyCard1, { backgroundColor: colors.card }]}
-      onPress={() => (navigation as any).navigate('PropertyDetailFull', { property })}
-      activeOpacity={0.9}
-    >
-      <Image source={{ uri: property.image }} style={styles.propertyImage} />
-      <View style={styles.propertyInfo}>
-        
-        <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={2}>
-          {property.title}
-        </Text>
- 
-      </View>
-    </TouchableOpacity>
-  );
+  const requestLocationAndFetchNearby = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          getUserLocationAndFetch();
+        }
+      } else {
+        getUserLocationAndFetch();
+      }
+    } catch (err) {
+      console.warn('Location permission error:', err);
+    }
+  };
+
+  const getUserLocationAndFetch = () => {
+    Geolocation.getCurrentPosition(
+      (position: any) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ latitude, longitude });
+        fetchNearbyProperties(latitude, longitude);
+      },
+      (error: any) => {
+        console.warn('Error getting location:', error);
+        // Fallback to default location (Kuala Lumpur)
+        fetchNearbyProperties(3.1390, 101.6869);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+      },
+    );
+  };
+
+  const fetchNearbyProperties = async (latitude: number, longitude: number) => {
+    try {
+      setLoadingNearby(true);
+      const response = await propertyService.getNearbyProperties({
+        latitude,
+        longitude,
+        radius: 10, // 10km radius
+        limit: 20,
+      });
+      setNearbyProperties(response.properties || []);
+    } catch (error) {
+      console.error('Failed to fetch nearby properties:', error);
+      setNearbyProperties([]);
+    } finally {
+      setLoadingNearby(false);
+    }
+  };
+
+  const fetchAmenityCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const response = await propertyService.getAmenityCategories();
+      setAmenityCategories(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch amenity categories:', error);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const fetchProperties = async () => {
+    try {
+      setLoading(true);
+      // Only send filters that have values (not undefined/empty)
+      const params: any = {
+        page: filters.page || 1,
+        limit: filters.limit || 100,
+        sortBy: filters.sortBy || 'newest',
+      };
+
+      // Only add filter params if they have values
+      if (filters.city) params.city = filters.city;
+      if (filters.minPrice) params.minPrice = filters.minPrice;
+      if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+      if (filters.bedrooms) params.bedrooms = filters.bedrooms;
+      if (filters.bathrooms) params.bathrooms = filters.bathrooms;
+      if (filters.amenities && filters.amenities.length > 0) params.amenities = filters.amenities.join(',');
+      if (searchText) params.search = searchText;
+
+      const response = await propertyService.getPropertiesWithFilters(params);
+      setProperties(response.properties || []);
+    } catch (error) {
+      console.error('Failed to fetch properties:', error);
+      // Set empty array on error to prevent crash
+      setProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (text: string) => {
+    setSearchText(text);
+  };
+
+  const updateFilter = (key: string, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Map properties with coordinates
+  const mapProperties = properties
+    .filter(p => p.latitude && p.longitude)
+    .map(p => ({
+      id: p.id,
+      title: p.title,
+      latitude: p.latitude!,
+      longitude: p.longitude!,
+      price: p.price,
+      image: p.images?.[0],
+    }));
+
+  const getCategoryIcon = (categoryName: string): string => {
+    const iconMap: { [key: string]: string } = {
+      'Comfort': 'bed-outline',
+      'Safety': 'shield-checkmark-outline',
+      'Entertainment': 'game-controller-outline',
+      'Convenience': 'location-outline',
+      'Recreation': 'fitness-outline',
+      'Utilities': 'water-outline',
+      'Technology': 'wifi-outline',
+      'Kitchen': 'restaurant-outline',
+      'Outdoor': 'leaf-outline',
+      'Accessibility': 'accessibility-outline',
+    };
+    return iconMap[categoryName] || 'home-outline';
+  };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Search Bar */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.searchContainer,
           {
@@ -141,12 +231,52 @@ const ExploreScreen: React.FC = () => {
           style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search address, city, location"
           placeholderTextColor={colors.textSecondary}
+          value={searchText}
+          onChangeText={handleSearch}
         />
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
           <Icon name="options-outline" size={20} color={colors.text} />
         </TouchableOpacity>
       </Animated.View>
-      <Animated.View 
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApply={(newFilters) => {
+          setFilters(prev => ({ ...prev, ...newFilters }));
+        }}
+        initialFilters={filters}
+      />
+
+      {/* Map View */}
+      <Animated.View
+        style={[
+          styles.mapSection,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
+        {mapProperties && mapProperties.length > 0 ? (
+          <MapViewComponent
+            properties={mapProperties}
+            height={250}
+            onMarkerPress={(property) => {
+              console.log('Property clicked:', property);
+              (navigation as any).navigate('PropertyDetailFull', { propertyId: property.id });
+            }}
+          />
+        ) : (
+          <View style={[styles.emptyMapContainer, { backgroundColor: colors.surface }]}>
+            <Icon name="map-outline" size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No properties to display on map</Text>
+          </View>
+        )}
+      </Animated.View>
+
+      <Animated.View
         style={[
           styles.section,
           {
@@ -157,19 +287,139 @@ const ExploreScreen: React.FC = () => {
       >
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Find your next trip!</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Nearby Location Properties</Text>
+            {userLocation && (
+              <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+                Within 10km radius
+              </Text>
+            )}
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate('ExploreDetail' as never)}>
+          <TouchableOpacity onPress={() => (navigation as any).navigate('ExploreDetail', {
+            properties: nearbyProperties,
+            title: 'Nearby Properties',
+            location: userLocation,
+            isNearby: true
+          })}>
             <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
         </View>
+
+        {loadingNearby ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+            <PropertyCardSkeleton />
+            <PropertyCardSkeleton />
+            <PropertyCardSkeleton />
+          </ScrollView>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+            {nearbyProperties && nearbyProperties.length > 0 ? (
+              nearbyProperties.map(property => (
+                <TouchableOpacity
+                  key={property.id}
+                  style={[styles.propertyCard, { backgroundColor: colors.card }]}
+                  onPress={() => (navigation as any).navigate('PropertyDetailFull', { propertyId: property.id })}
+                  activeOpacity={0.9}
+                >
+                  <Image source={{ uri: property.images?.[0] || 'https://via.placeholder.com/400' }} style={styles.propertyImage} />
+                  <View style={styles.propertyInfo}>
+                    <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={2}>
+                      {property.title}
+                    </Text>
+                    <View style={styles.rentedRow}>
+                      <Icon name="location-outline" size={14} color="#0F6980" />
+                      <Text style={styles.rentedText}>
+                        {property.city || ''}{property.city && property.state ? ', ' : ''}{property.state || ''}
+                      </Text>
+                    </View>
+                    <View style={styles.priceRow}>
+                      <Text style={[styles.priceText, { color: colors.text }]}>${property.price}</Text>
+                      <Text style={[styles.priceUnit, { color: colors.textSecondary }]}>/month</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  No nearby properties found
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        )}
+      </Animated.View>
+
+      {/* Filtered Properties Section */}
+      <Animated.View
+        style={[
+          styles.section,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Available Properties</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+              {properties.length} properties found
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => (navigation as any).navigate('ExploreDetail', {
+            properties: properties,
+            title: 'All Properties',
+            filters: filters
+          })}>
+            <Text style={styles.seeAllText}>See all</Text>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-          {nearProperties.map(property => renderPropertyCard(property))}
+          {loading ? (
+            <>
+              <PropertyCardSkeleton />
+              <PropertyCardSkeleton />
+              <PropertyCardSkeleton />
+            </>
+          ) : properties && properties.length > 0 ? (
+            properties.slice(0, 10).map(property => (
+              <TouchableOpacity
+                key={property.id}
+                style={[styles.propertyCard, { backgroundColor: colors.card }]}
+                onPress={() => (navigation as any).navigate('PropertyDetailFull', { propertyId: property.id })}
+                activeOpacity={0.9}
+              >
+                <Image source={{ uri: property.images?.[0] || 'https://via.placeholder.com/400' }} style={styles.propertyImage} />
+                <View style={styles.propertyInfo}>
+                  <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={2}>
+                    {property.title}
+                  </Text>
+                  <View style={styles.rentedRow}>
+                    <Icon name="location-outline" size={14} color="#0F6980" />
+                    <Text style={styles.rentedText}>
+                      {property.city || ''}{property.city && property.state ? ', ' : ''}{property.state || ''}
+                    </Text>
+                  </View>
+                  <View style={styles.priceRow}>
+                    <Text style={[styles.priceText, { color: colors.text }]}>${property.price}</Text>
+                    <Text style={[styles.priceUnit, { color: colors.textSecondary }]}>/month</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                No properties found. Try adjusting your filters.
+              </Text>
+            </View>
+          )}
         </ScrollView>
       </Animated.View>
 
-      {/* Top rated in Surabaya */}
-      <Animated.View 
+      {/* Amenity Categories - Exploring Living Style */}
+      <Animated.View
         style={[
           styles.section,
           {
@@ -181,12 +431,55 @@ const ExploreScreen: React.FC = () => {
         <View style={styles.sectionHeader}>
           <View>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Exploring about your living style?</Text>
+            <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Browse by amenity categories</Text>
           </View>
-          
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-          {topRatedProperties.map(property => renderPropertyCard1(property))}
-        </ScrollView>
+
+        {loadingCategories ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+            <CategoryCardSkeleton />
+            <CategoryCardSkeleton />
+            <CategoryCardSkeleton />
+          </ScrollView>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+            {amenityCategories && amenityCategories.length > 0 ? (
+              amenityCategories.map(category => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[styles.categoryCard, { backgroundColor: colors.card }]}
+                  onPress={() => {
+                    setFilters(prev => ({ ...prev, amenityCategory: category.name }));
+                    setShowFilterModal(true);
+                  }}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.categoryIconContainer}>
+                    <Icon
+                      name={getCategoryIcon(category.name)}
+                      size={40}
+                      color="#0F6980"
+                    />
+                  </View>
+                  <View style={styles.categoryInfo}>
+                    <Text style={[styles.categoryTitle, { color: colors.text }]} numberOfLines={2}>
+                      {category.name}
+                    </Text>
+                    {category.description && (
+                      <Text style={[styles.categoryDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {category.description}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No categories available</Text>
+              </View>
+            )}
+          </ScrollView>
+        )}
       </Animated.View>
     </ScrollView>
   );
@@ -231,6 +524,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 12,
+  },
+  mapSection: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  loadingContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -360,14 +662,6 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
   },
-  priceText: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  priceUnit: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
   emptyFavText: {
     fontSize: 15,
     fontStyle: 'italic',
@@ -377,11 +671,72 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    marginBottom: 8,
   },
   rentedText: {
     fontSize: 12,
     color: '#0F6980',
     fontWeight: '500',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  priceText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  priceUnit: {
+    fontSize: 12,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+  },
+  emptyMapContainer: {
+    height: 250,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  categoryCard: {
+    width: 200,
+    marginRight: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    minHeight: 140,
+  },
+  categoryIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#0F698015',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  categoryInfo: {
+    flex: 1,
+  },
+  categoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  categoryDescription: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
 

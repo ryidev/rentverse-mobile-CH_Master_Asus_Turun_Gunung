@@ -35,6 +35,11 @@ export interface Property {
   price: number;
   location: string;
   address: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
   bedrooms: number;
   bathrooms: number;
   area: number; // in sqm
@@ -68,6 +73,7 @@ export interface Amenity {
   id: string;
   name: string;
   icon: string;
+  category?: string;
 }
 
 // Rating & Review Types

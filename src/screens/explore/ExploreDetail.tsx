@@ -9,15 +9,26 @@ import {
   Animated,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { Property } from '../../types';
+import { propertyService } from '../../services/propertyService';
+
+type ExploreDetailRouteParams = {
+  properties?: Property[];
+  title?: string;
+  location?: { latitude: number; longitude: number };
+  isNearby?: boolean;
+};
 
 const ExploreDetail: React.FC = () => {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const route = useRoute<RouteProp<{ params: ExploreDetailRouteParams }, 'params'>>();
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Animation values
   const fadeAnim = new Animated.Value(0);
@@ -36,91 +47,45 @@ const ExploreDetail: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Load properties from route params or fetch from API
+    if (route.params?.properties) {
+      setProperties(route.params.properties);
+    } else if (route.params?.isNearby && route.params?.location) {
+      fetchNearbyProperties(route.params.location);
+    } else {
+      fetchAllProperties();
+    }
   }, []);
 
-  // Extended list of properties
-  const allProperties = [
-    {
-      id: '1',
-      image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400',
-      title: 'Entire Bromo mountain view Cabin in Suraya',
-      rented: 526,
-      location: 'Suraya, Bromo',
-      rating: 4.8,
-    },
-    {
-      id: '2',
-      image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
-      title: 'Modern Beach House',
-      rented: 750,
-      location: 'Bali, Indonesia',
-      rating: 4.9,
-    },
-    {
-      id: '3',
-      image: 'https://31sudirmansuites.com/wp-content/uploads/2019/11/FEATURED_10_20191115031104-814x534-1.jpg',
-      title: 'Modern Apartmen',
-      rented: 7989,
-      location: 'Jakarta, Indonesia',
-      rating: 4.7,
-    },
-    {
-      id: '4',
-      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400',
-      title: 'Luxury Villa with Private Pool',
-      rented: 1250,
-      location: 'Ubud, Bali',
-      rating: 4.9,
-    },
-    {
-      id: '5',
-      image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400',
-      title: 'Cozy Mountain Retreat',
-      rented: 890,
-      location: 'Bandung, West Java',
-      rating: 4.6,
-    },
-    {
-      id: '6',
-      image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400',
-      title: 'Urban Loft Downtown',
-      rented: 1580,
-      location: 'Surabaya, East Java',
-      rating: 4.8,
-    },
-    {
-      id: '7',
-      image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=400',
-      title: 'Seaside Cottage',
-      rented: 650,
-      location: 'Lombok, Indonesia',
-      rating: 4.7,
-    },
-    {
-      id: '8',
-      image: 'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=400',
-      title: 'Traditional Wooden House',
-      rented: 420,
-      location: 'Yogyakarta, Indonesia',
-      rating: 4.5,
-    },
-    {
-      id: '9',
-      image: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=400',
-      title: 'Penthouse with City View',
-      rented: 2100,
-      location: 'Jakarta, Indonesia',
-      rating: 4.9,
-    },
-    {
-      id: '10',
-      image: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=400',
-      title: 'Garden Villa',
-      rented: 980,
-      location: 'Bogor, West Java',
-      rating: 4.6,
-    },
-  ];
+  const fetchNearbyProperties = async (location: { latitude: number; longitude: number }) => {
+    try {
+      setLoading(true);
+      const response = await propertyService.getNearbyProperties({
+        latitude: location.latitude,
+        longitude: location.longitude,
+        radius: 10,
+        limit: 100,
+      });
+      setProperties(response.properties);
+    } catch (error) {
+      console.error('Error fetching nearby properties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllProperties = async () => {
+    try {
+      setLoading(true);
+      const response = await propertyService.getProperties({ page: 1, limit: 100 });
+      setProperties(response.properties);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => {
@@ -134,62 +99,67 @@ const ExploreDetail: React.FC = () => {
     });
   };
 
-  const renderPropertyCard = ({ item, index }: { item: any; index: number }) => {
-    return (
-      <Animated.View
-        style={[
-          styles.propertyCard,
-          {
-            opacity: fadeAnim,
-            transform: [
-              {
-                translateY: slideAnim,
-              },
-            ],
-          },
-        ]}
+  const renderProperty = ({ item }: { item: Property }) => (
+    <Animated.View
+      style={[
+        styles.propertyCard,
+        {
+          opacity: fadeAnim,
+          transform: [
+            {
+              translateY: slideAnim,
+            },
+          ],
+        },
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => (navigation as any).navigate('PropertyDetailFull', { property: item })}
       >
-        <TouchableOpacity 
-          activeOpacity={0.9}
-          onPress={() => (navigation as any).navigate('PropertyDetailFull', { property: item })}
+        <Image
+          source={{ uri: item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/400' }}
+          style={styles.propertyImage}
+        />
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={() => toggleFavorite(item.id)}
         >
-          <Image source={{ uri: item.image }} style={styles.propertyImage} />
-          <TouchableOpacity
-            style={styles.favoriteButton}
-            onPress={() => toggleFavorite(item.id)}
-          >
-            <Icon
-              name={favorites.has(item.id) ? 'heart' : 'heart-outline'}
-              size={24}
-              color={favorites.has(item.id) ? '#FF385C' : '#FFFFFF'}
-            />
-          </TouchableOpacity>
+          <Icon
+            name={favorites.has(item.id) ? 'heart' : 'heart-outline'}
+            size={24}
+            color={favorites.has(item.id) ? '#FF385C' : '#FFFFFF'}
+          />
+        </TouchableOpacity>
+        {item.rating && (
           <View style={styles.ratingBadge}>
             <Icon name="star" size={14} color="#FFB800" />
             <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
-          <View style={styles.propertyInfo}>
-            <Text style={styles.propertyTitle} numberOfLines={2}>
-              {item.title}
+        )}
+        <View style={styles.propertyInfo}>
+          <Text style={styles.propertyTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+          <View style={styles.locationRow}>
+            <Icon name="location-outline" size={14} color="#64748B" />
+            <Text style={styles.locationText}>
+              {[item.city, item.state, item.country].filter(Boolean).join(', ')}
             </Text>
-            <View style={styles.locationRow}>
-              <Icon name="location-outline" size={14} color="#64748B" />
-              <Text style={styles.locationText}>{item.location}</Text>
-            </View>
-            <View style={styles.rentedRow}>
-              <Icon name="people-outline" size={14} color="#0F6980" />
-              <Text style={styles.rentedText}>{item.rented} people rented</Text>
-            </View>
           </View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
+          <View style={styles.priceRow}>
+            <Text style={styles.priceText}>${item.price}</Text>
+            <Text style={styles.priceUnit}>/month</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <Animated.View
         style={[
@@ -204,20 +174,34 @@ const ExploreDetail: React.FC = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Find Your Next Trip</Text>
+        <Text style={styles.headerTitle}>
+          {route.params?.title || 'All Properties'}
+        </Text>
         <View style={styles.placeholder} />
       </Animated.View>
 
       {/* List */}
-      <FlatList
-        data={allProperties}
-        renderItem={renderPropertyCard}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0F6980" />
+        </View>
+      ) : (
+        <FlatList
+          data={properties}
+          renderItem={renderProperty}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Icon name="home-outline" size={64} color="#CBD5E1" />
+              <Text style={styles.emptyText}>No properties found</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -322,15 +306,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
   },
-  rentedRow: {
+  priceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    alignItems: 'baseline',
+    marginTop: 4,
   },
-  rentedText: {
-    fontSize: 12,
+  priceText: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#0F6980',
-    fontWeight: '500',
+  },
+  priceUnit: {
+    fontSize: 12,
+    color: '#64748B',
+    marginLeft: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#64748B',
+    marginTop: 16,
   },
 });
 

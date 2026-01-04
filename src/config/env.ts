@@ -14,6 +14,9 @@ export const ENV = {
   GOOGLE_WEB_CLIENT_ID: '451684083302-3akpsnucahav0mjf5prp37tn60t8p8kn.apps.googleusercontent.com',
   GOOGLE_ANDROID_CLIENT_ID: '451684083302-kv4fhcn1lacvne53g7eis599a5mgiud1.apps.googleusercontent.com',
 
+  // Map Configuration
+  MAPTILER_API_KEY: 'pgR2s5GhaTpw9T2OsPGv',
+
   // Feature Flags
   ENABLE_AI_PREDICTION: false,
   ENABLE_OAUTH: true,
