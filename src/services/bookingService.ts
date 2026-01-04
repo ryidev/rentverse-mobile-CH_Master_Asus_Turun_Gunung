@@ -2,8 +2,13 @@ import { apiService } from './api';
 import { Booking, CreateBookingData } from '../types';
 
 export const bookingService = {
-  async getBookings(): Promise<Booking[]> {
-    return apiService.get<Booking[]>('/bookings');
+  async getBookings(params?: {
+    page?: number;
+    limit?: number;
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
+    role?: 'tenant' | 'owner';
+  }): Promise<Booking[]> {
+    return apiService.get<Booking[]>('/m/bookings', { params });
   },
 
   async getBookingById(id: string): Promise<Booking> {

@@ -10,10 +10,14 @@ import {
   SafeAreaView,
   StatusBar,
   Animated,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCurrency } from '../../context/CurrencyContext';
+import { bookingService } from '../../services/bookingService';
+import { CreateBookingData } from '../../types';
 
 const RentBookingScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -24,6 +28,7 @@ const RentBookingScreen: React.FC = () => {
 
   const [selectedPayment, setSelectedPayment] = useState<string>('debit');
   const [showPolicies, setShowPolicies] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fadeAnim = new Animated.Value(0);
 
   // Booking details
@@ -73,9 +78,42 @@ const RentBookingScreen: React.FC = () => {
     },
   ];
 
-  const handlePlaceBooking = () => {
-    // TODO: Implement booking logic
-    console.log('Booking placed');
+  const handlePlaceBooking = async () => {
+    setIsLoading(true);
+    try {
+      // Calculate dates based on current date + duration (simulating selection)
+      const checkInDate = new Date();
+      const checkOutDate = new Date();
+      checkOutDate.setDate(checkInDate.getDate() + bookingDetails.duration);
+
+      const bookingData: CreateBookingData = {
+        propertyId: property.id,
+        checkIn: checkInDate.toISOString(),
+        checkOut: checkOutDate.toISOString(),
+        guests: bookingDetails.guests,
+      };
+
+      await bookingService.createBooking(bookingData);
+
+      Alert.alert(
+        'Success',
+        'Booking placed successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navigate back to Home or potentially to a Bookings tab
+              navigation.navigate('Main' as never);
+            }
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('Booking error:', error);
+      Alert.alert('Error', error.message || 'Failed to place booking. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -227,10 +265,15 @@ const RentBookingScreen: React.FC = () => {
       {/* Bottom Button */}
       <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity
-          style={styles.bookingButton}
+          style={[styles.bookingButton, isLoading && { opacity: 0.7 }]}
           onPress={handlePlaceBooking}
+          disabled={isLoading}
         >
-          <Text style={styles.bookingButtonText}>Place booking request</Text>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.bookingButtonText}>Place booking request</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>

@@ -1,44 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Animated } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Animated, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useCurrency } from '../../context/CurrencyContext';
-
-// Mock Data for Bookings
-const bookings = [
-  {
-    id: '1',
-    propertyTitle: 'Modern Beach House',
-    location: 'Surabaya, Beach Road',
-    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
-    checkIn: '12 Dec 2024',
-    checkOut: '15 Dec 2024',
-    status: 'upcoming',
-    price: 750,
-  },
-  {
-    id: '2',
-    propertyTitle: 'Luxury Apartment',
-    location: 'Central Surabaya',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400',
-    checkIn: '20 Nov 2024',
-    checkOut: '25 Nov 2024',
-    status: 'completed',
-    price: 850,
-  },
-  {
-    id: '3',
-    propertyTitle: 'Cozy Mountain Cabin',
-    location: 'Malang, Probolinggo',
-    image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400',
-    checkIn: '10 Oct 2024',
-    checkOut: '12 Oct 2024',
-    status: 'cancelled',
-    price: 526,
-  },
-];
+import { bookingService } from '../../services/bookingService';
+import { Booking } from '../../types';
 
 const BookingHistoryScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -46,11 +14,46 @@ const BookingHistoryScreen: React.FC = () => {
   const { formatPrice } = useCurrency();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
+  const fetchBookings = async () => {
+    setIsLoading(true);
+    try {
+      let status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | undefined;
+      let fetchedBookings: Booking[] = [];
+
+      if (activeTab === 'upcoming') {
+        const [pending, approved] = await Promise.all([
+          bookingService.getBookings({ role: 'tenant', status: 'PENDING' }),
+          bookingService.getBookings({ role: 'tenant', status: 'APPROVED' })
+        ]);
+        fetchedBookings = [...pending, ...approved].sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      } else {
+        if (activeTab === 'completed') status = 'COMPLETED';
+        if (activeTab === 'cancelled') status = 'CANCELLED';
+
+        fetchedBookings = await bookingService.getBookings({ role: 'tenant', status });
+      }
+
+      setBookings(fetchedBookings);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
+    fetchBookings();
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -63,20 +66,29 @@ const BookingHistoryScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [activeTab]); // Re-run animation on tab change if desired, strictly speaking should be when screen loads or list changes
+  }, [activeTab]);
 
-  const filteredBookings = bookings.filter(b => b.status === activeTab);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchBookings();
+  }, [activeTab]);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming': return '#0F6980'; // Primary
+    switch (status?.toLowerCase()) {
+      case 'confirmed':
+      case 'approved':
+        return '#0F6980'; // Primary
+      case 'pending':
+        return '#F59E0B'; // Orange
       case 'completed': return '#4ADE80'; // Green
-      case 'cancelled': return '#EF4444'; // Red
+      case 'cancelled':
+      case 'rejected':
+        return '#EF4444'; // Red
       default: return colors.textSecondary;
     }
   };
 
-  const renderItem = ({ item, index }: { item: any; index: number }) => {
+  const renderItem = ({ item, index }: { item: Booking; index: number }) => {
     const itemFade = new Animated.Value(0);
     const itemSlide = new Animated.Value(20);
 
@@ -99,32 +111,48 @@ const BookingHistoryScreen: React.FC = () => {
     return (
       <Animated.View style={[styles.cardContainer, { opacity: itemFade, transform: [{ translateY: itemSlide }] }]}>
         <View style={[styles.card, { backgroundColor: colors.card, shadowColor: '#000' }]}>
-          <Image source={{ uri: item.image }} style={styles.cardImage} />
+          <Image
+            source={{ uri: item.property?.images?.[0] || 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400' }}
+            style={styles.cardImage}
+          />
           <View style={styles.cardContent}>
             <View style={styles.headerRow}>
-              <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={1}>{item.propertyTitle}</Text>
+              <Text style={[styles.propertyTitle, { color: colors.text }]} numberOfLines={1}>
+                {item.property?.title || 'Unknown Property'}
+              </Text>
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '20' }]}>
-                <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{item.status.toUpperCase()}</Text>
+                <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                  {item.status.charAt(0).toUpperCase() + item.status.slice(1).toLowerCase()}
+                </Text>
               </View>
             </View>
-            <Text style={[styles.locationText, { color: colors.textSecondary }]}>{item.location}</Text>
+            <View style={styles.locationRow}>
+              <Icon name="location-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.locationText, { color: colors.textSecondary }]} numberOfLines={1}>
+                {item.property?.location || item.property?.address || 'Location not available'}
+              </Text>
+            </View>
 
             <View style={styles.divider} />
 
             <View style={styles.detailsRow}>
               <View style={styles.detailItem}>
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Check-in</Text>
-                <Text style={[styles.detailValue, { color: colors.text }]}>{item.checkIn}</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {new Date(item.checkIn).toLocaleDateString()}
+                </Text>
               </View>
               <View style={styles.verticalDivider} />
               <View style={styles.detailItem}>
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Check-out</Text>
-                <Text style={[styles.detailValue, { color: colors.text }]}>{item.checkOut}</Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {new Date(item.checkOut).toLocaleDateString()}
+                </Text>
               </View>
             </View>
 
             <View style={styles.footerRow}>
-              <Text style={[styles.priceText, { color: colors.text }]}>{formatPrice(item.price)}</Text>
+              <Text style={[styles.priceText, { color: colors.text }]}>{formatPrice(item.totalPrice)}</Text>
               <TouchableOpacity style={styles.detailButton} onPress={() => { }}>
                 <Text style={[styles.detailButtonText, { color: colors.primary }]}>View Details</Text>
               </TouchableOpacity>
@@ -165,19 +193,28 @@ const BookingHistoryScreen: React.FC = () => {
         ))}
       </View>
 
-      <FlatList
-        data={filteredBookings}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Icon name="calendar-outline" size={64} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No {activeTab} bookings found</Text>
-          </View>
-        }
-      />
+      {isLoading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={bookings}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Icon name="calendar-outline" size={64} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No {activeTab} bookings found</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };
