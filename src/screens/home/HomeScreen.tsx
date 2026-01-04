@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
@@ -29,6 +30,7 @@ const HomeScreen: React.FC = () => {
   const { colors } = useTheme();
   const [selectedTab, setSelectedTab] = useState<'rent' | 'buy'>('rent');
   const [listingMode, setListingMode] = useState<'list' | 'create'>('list');
+  const insets = useSafeAreaInsets();
 
   // Country selector state
   const [selectedCountry, setSelectedCountry] = useState<'ID' | 'MY'>('ID');
@@ -120,7 +122,7 @@ const HomeScreen: React.FC = () => {
   const fetchTopRatedProperties = async () => {
     try {
       setLoadingTopRated(true);
-      const city = searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Surabaya');
+      const city = searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Yogyakarta');
 
       const { properties } = await propertyService.getTopRatedProperties({
         city,
@@ -155,7 +157,7 @@ const HomeScreen: React.FC = () => {
   // Fetch property statistics based on location or search
   const fetchPropertyStats = async () => {
     try {
-      const city = searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Surabaya');
+      const city = searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Yogyakarta');
 
       const stats = await propertyService.getPropertyStats({
         city,
@@ -322,7 +324,7 @@ const HomeScreen: React.FC = () => {
         }
       >
         {/* Header Section */}
-        <View style={styles.headerSection}>
+        <View style={[styles.headerSection, { paddingTop: insets.top + 16 }]}>
           <Animated.View
             style={[
               styles.topBar,
@@ -345,7 +347,7 @@ const HomeScreen: React.FC = () => {
                 <Text style={[styles.locationText, { color: colors.text }]}>
                   {loadingLocation ? 'Getting location...' :
                     searchActive && searchQuery ? searchQuery :
-                      currentLocation?.city || 'Surabaya'}, {getCountryName()}
+                      currentLocation?.city || 'Yogyakarta'}, {getCountryName()}
                 </Text>
                 <Icon name="chevron-down" size={20} color={colors.text} />
               </TouchableOpacity>
@@ -455,9 +457,9 @@ const HomeScreen: React.FC = () => {
               <Animated.View style={sectionStyle(slideSection1Anim)}>
                 <View style={styles.sectionHeader}>
                   <View>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Near your location</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Near {searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Yogyakarta')}</Text>
                     <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-                      {propertyCount} properties in {searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Surabaya')}
+                      {propertyCount} properties in {searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Yogyakarta')}
                     </Text>
                   </View>
                   <TouchableOpacity>
@@ -492,7 +494,7 @@ const HomeScreen: React.FC = () => {
               <Animated.View style={sectionStyle(slideSection2Anim)}>
                 <View style={styles.sectionHeader}>
                   <View>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Top rated in {searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Surabaya')}</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Top rated in {searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Yogyakarta')}</Text>
                     <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Highest rated properties</Text>
                   </View>
                   <TouchableOpacity>
@@ -568,7 +570,7 @@ const HomeScreen: React.FC = () => {
                 <UserPropertiesList
                   properties={userProperties}
                   onAddPress={() => setListingMode('create')}
-                  onPropertyPress={(property) => (navigation as any).navigate('PropertyDetailFull', { property })}
+                  onPropertyPress={(property) => (navigation as any).navigate('PropertyDetailLandlord', { property })}
                   containerStyle={{ opacity: fadeAnim, transform: [{ translateY: slideSection1Anim }] }}
                 />
               )
@@ -646,7 +648,7 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     padding: 16,
-    paddingTop: 50,
+    // paddingTop removed
   },
   topBar: {
     flexDirection: 'row',
@@ -809,6 +811,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   selectedCountryOption: {
+    width: '90%',
     backgroundColor: '#E0F2F7',
     borderWidth: 2,
     borderColor: '#0F6980',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -43,9 +43,9 @@ const ExploreScreen: React.FC = () => {
   });
 
   // Animation values
-  const fadeAnim = new Animated.Value(0);
-  const scaleAnim = new Animated.Value(0.9);
-  const slideAnim = new Animated.Value(30);
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
+  const slideAnim = React.useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
     Animated.parallel([

@@ -1,35 +1,67 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
+  ActivityIndicator,
+  Text,
+  Alert,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { HomeStackParamList } from '../../types';
+import { HomeStackParamList } from '../../types'; // Adjust imports if necessary
 import { Colors } from '../../constants';
+import CreatePropertyForm from '../../components/CreatePropertyForm';
+import { apiService } from '../../services/api';
+
+// Since we are likely in HomeStack, adjust types if needed or keep using HomeStackParamList
+// If HomeStackParamList is not available usually, define local or import correct one.
+// Assuming HomeStackParamList from navigation/HomeStackNavigator is what we use:
+import { HomeStackParamList as LocalHomeStackParamList } from '../../navigation/HomeStackNavigator';
 
 type EditPropertyScreenNavigationProp = StackNavigationProp<
-  HomeStackParamList,
+  LocalHomeStackParamList,
   'EditProperty'
 >;
-type EditPropertyScreenRouteProp = RouteProp<HomeStackParamList, 'EditProperty'>;
+type EditPropertyScreenRouteProp = RouteProp<LocalHomeStackParamList, 'EditProperty'>;
 
 interface Props {
-  navigation: EditPropertyScreenNavigationProp;
-  route: EditPropertyScreenRouteProp;
+  navigation: any; // Type workaround to avoid complex type matching issues
+  route: any;
 }
 
 const EditPropertyScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { propertyId } = route.params;
+  const { property } = route.params;
+  const [isLoading, setIsLoading] = useState(false);
+  const [fullPropertyData, setFullPropertyData] = useState<any>(property);
 
-  // Similar to CreatePropertyScreen but with pre-filled data
-  // Implementation can be added based on CreatePropertyScreen
+  useEffect(() => {
+    // If we only have partial data, we might want to fetch full details.
+    // However, property passed from detail screen usually has enough info.
+    // If needed: fetchPropertyDetails();
+  }, [property.id]);
+
+  const handleSuccess = () => {
+    navigation.popToTop(); // Go back to Home
+    // Or navigation.navigate('HomeMain');
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Edit Property Screen - ID: {propertyId}</Text>
-      <Text style={styles.subtext}>Implementation similar to Create Property</Text>
+      <CreatePropertyForm
+        onBack={() => navigation.goBack()}
+        onSuccess={handleSuccess}
+        showHeader={true}
+        initialData={fullPropertyData}
+        mode="edit"
+      />
     </View>
   );
 };
@@ -38,19 +70,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-  },
-  text: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  subtext: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+    backgroundColor: Colors.background,
   },
 });
 

@@ -10,24 +10,25 @@ import {
   SafeAreaView,
   StatusBar,
   Animated,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCurrency } from '../../context/CurrencyContext';
+import { apiService } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
-const PropertyDetailFullScreen: React.FC = () => {
+const PropertyDetailLandlord: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { property } = route.params as any;
   const { formatPrice } = useCurrency();
   const insets = useSafeAreaInsets();
 
-  const [isFavorite, setIsFavorite] = useState(false);
-  const fadeAnim = new Animated.Value(0);
-  const slideAnim = new Animated.Value(30);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(30));
 
   useEffect(() => {
     Animated.parallel([
@@ -43,6 +44,41 @@ const PropertyDetailFullScreen: React.FC = () => {
       }),
     ]).start();
   }, []);
+
+  const handleEdit = () => {
+    (navigation as any).navigate('EditProperty', { property });
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Property',
+      'Are you sure you want to delete this property? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiService.delete(`/ properties / ${property.id} `);
+              Alert.alert('Success', 'Property deleted successfully', [
+                {
+                  text: 'OK',
+                  onPress: () => navigation.goBack(),
+                },
+              ]);
+            } catch (error: any) {
+              console.error('Error deleting property:', error);
+              Alert.alert('Error', error.response?.data?.message || 'Failed to delete property');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const facilities = [
     { icon: 'snow-outline', name: 'Air conditioner' },
@@ -96,17 +132,17 @@ const PropertyDetailFullScreen: React.FC = () => {
               <Icon name="arrow-back" size={24} color="#FFF" />
             </TouchableOpacity>
             <View style={styles.rightButtons}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Icon name="share-social-outline" size={24} color="#FFF" />
+              <TouchableOpacity style={styles.iconButton} onPress={handleEdit}>
+                <Icon name="pencil-outline" size={24} color="#FFF" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => setIsFavorite(!isFavorite)}
+                onPress={handleDelete}
               >
                 <Icon
-                  name={isFavorite ? 'heart' : 'heart-outline'}
+                  name="trash-outline"
                   size={24}
-                  color={isFavorite ? '#FF385C' : '#FFF'}
+                  color="#FF385C"
                 />
               </TouchableOpacity>
             </View>
@@ -210,11 +246,11 @@ const PropertyDetailFullScreen: React.FC = () => {
               <View style={styles.mapMarker}>
                 <Icon name="location" size={24} color="#6366F1" />
               </View>
-            </View>
-          </View>
+            </View >
+          </View >
 
           {/* Nearest Public Facilities */}
-          <View style={styles.section}>
+          < View style={styles.section} >
             <Text style={styles.sectionTitle}>Nearest public facilities</Text>
             <View style={styles.publicFacilitiesGrid}>
               {publicFacilities.map((facility, index) => (
@@ -227,58 +263,60 @@ const PropertyDetailFullScreen: React.FC = () => {
                 </View>
               ))}
             </View>
-          </View>
+          </View >
 
           {/* About Location */}
-          <View style={styles.section}>
+          < View style={styles.section} >
             <Text style={styles.sectionTitle}>About this property</Text>
             <Text style={styles.aboutText}>
               {property?.description || 'No description available for this property.'}
             </Text>
-          </View>
+          </View >
 
           {/* Average Living Cost */}
-          <View style={styles.section}>
+          < View style={styles.section} >
             <View style={styles.costCard}>
               <Text style={styles.costLabel}>Average living cost</Text>
               <Text style={styles.costValue}>{formatPrice(property?.price || 0)}/month</Text>
             </View>
-          </View>
+          </View >
 
           {/* Testimonials */}
-          <View style={styles.section}>
+          < View style={styles.section} >
             <Text style={styles.sectionTitle}>Testimonials</Text>
-            {testimonials.map((testimonial) => (
-              <View key={testimonial.id} style={styles.testimonialCard}>
-                <View style={styles.testimonialHeader}>
-                  <Image
-                    source={{ uri: testimonial.avatar }}
-                    style={styles.testimonialAvatar}
-                  />
-                  <View style={styles.testimonialInfo}>
-                    <Text style={styles.testimonialName}>{testimonial.name}</Text>
-                    <View style={styles.testimonialRating}>
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Icon key={i} name="star" size={14} color="#FFB800" />
-                      ))}
+            {
+              testimonials.map((testimonial) => (
+                <View key={testimonial.id} style={styles.testimonialCard}>
+                  <View style={styles.testimonialHeader}>
+                    <Image
+                      source={{ uri: testimonial.avatar }}
+                      style={styles.testimonialAvatar}
+                    />
+                    <View style={styles.testimonialInfo}>
+                      <Text style={styles.testimonialName}>{testimonial.name}</Text>
+                      <View style={styles.testimonialRating}>
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Icon key={i} name="star" size={14} color="#FFB800" />
+                        ))}
+                      </View>
                     </View>
+                    <Text style={styles.testimonialDate}>{testimonial.date}</Text>
                   </View>
-                  <Text style={styles.testimonialDate}>{testimonial.date}</Text>
+                  <Text style={styles.testimonialText} numberOfLines={3}>
+                    {testimonial.text} <Text style={styles.readMore}>Read more</Text>
+                  </Text>
                 </View>
-                <Text style={styles.testimonialText} numberOfLines={3}>
-                  {testimonial.text} <Text style={styles.readMore}>Read more</Text>
-                </Text>
-              </View>
-            ))}
-          </View>
+              ))
+            }
+          </View >
 
           {/* Bottom Spacing */}
-          <View style={{ height: 100 }} />
-        </Animated.View>
-      </ScrollView>
+          < View style={{ height: 100 }} />
+        </Animated.View >
+      </ScrollView >
 
       {/* Bottom Bar */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16, paddingTop: 16 }]}>
+      < View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16, paddingTop: 16 }]} >
         <View style={styles.priceContainer}>
           <Text style={styles.priceAmount}>{formatPrice(property?.price || 0)}</Text>
           <Text style={styles.priceUnit}> /month</Text>
@@ -293,8 +331,8 @@ const PropertyDetailFullScreen: React.FC = () => {
         >
           <Text style={styles.rentButtonText}>Rent</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </View >
+    </View >
   );
 };
 
@@ -638,4 +676,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PropertyDetailFullScreen;
+export default PropertyDetailLandlord;

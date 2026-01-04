@@ -6,6 +6,7 @@ import ProfileTabScreen from '../screens/profile/ProfileTabScreen';
 import PersonalScreen from '../screens/profile/PersonalProf';
 import SettingProfScreen from '../screens/profile/SettingProf';
 import BookingHistoryScreen from '../screens/profile/BookingHistoryScreen';
+import FaqProfScreen from '../screens/profile/FaqProf';
 import { useTheme } from '../context/ThemeContext';
 
 export type ProfileStackParamList = {
@@ -13,6 +14,7 @@ export type ProfileStackParamList = {
   Personal: undefined;
   Settings: undefined;
   BookingHistory: undefined;
+  Faq: undefined;
 };
 
 const Stack = createStackNavigator<ProfileStackParamList>();
@@ -80,6 +82,21 @@ const ProfileNavigator: React.FC = () => {
         options={{
           headerShown: false,
         }}
+      />
+      <Stack.Screen
+        name="Faq"
+        component={FaqProfScreen}
+        options={({ navigation }) => ({
+          title: 'Help Center',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ marginLeft: 16 }}
+            >
+              <Icon name="arrow-left" size={24} color={colors.text} />
+            </TouchableOpacity>
+          ),
+        })}
       />
     </Stack.Navigator>
   );

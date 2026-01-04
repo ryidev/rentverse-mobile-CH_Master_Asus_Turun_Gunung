@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../context/ThemeContext';
@@ -9,6 +10,7 @@ const ProfileTabScreen: React.FC = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { logout } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -63,13 +65,13 @@ const ProfileTabScreen: React.FC = () => {
     { id: 5, icon: 'calendar-outline', title: 'My Bookings', screen: 'BookingHistory' }, // New Item
     { id: 2, icon: 'settings-outline', title: 'Settings', screen: 'Settings' },
     { id: 3, icon: 'card-outline', title: 'Payment details', screen: null },
-    { id: 4, icon: 'help-circle-outline', title: 'FAQ', screen: null },
+    { id: 4, icon: 'help-circle-outline', title: 'FAQ', screen: 'FaqProf' },
   ];
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       {/* Profile Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 30 }]}>
         <Animated.View style={[styles.avatarContainer, { transform: [{ scale: scaleAnim }], opacity: fadeAnim }]}>
           <Image
             source={{ uri: 'https://assets.pikiran-rakyat.com/crop/0x0:0x0/720x0/webp/photo/2025/09/26/1043297320.jpg' }}
@@ -157,7 +159,6 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 80,
     paddingBottom: 30,
   },
   avatarContainer: {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -12,11 +13,14 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useCurrency } from '../../context/CurrencyContext';
 
 const RentBookingScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { property } = route.params as any;
+  const { formatPrice } = useCurrency();
+  const insets = useSafeAreaInsets();
 
   const [selectedPayment, setSelectedPayment] = useState<string>('debit');
   const [showPolicies, setShowPolicies] = useState(false);
@@ -77,19 +81,18 @@ const RentBookingScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
-      <SafeAreaView>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Rent booking</Text>
-          <TouchableOpacity style={styles.infoButton}>
-            <Icon name="information-circle-outline" size={24} color="#64748B" />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Rent booking</Text>
+        <TouchableOpacity style={styles.infoButton}>
+          <Icon name="information-circle-outline" size={24} color="#64748B" />
+        </TouchableOpacity>
+      </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -111,7 +114,7 @@ const RentBookingScreen: React.FC = () => {
                 {property?.location || 'Malang, Probolinggo'}
               </Text>
               <Text style={styles.propertyPrice}>
-                ${bookingDetails.pricePerDay}
+                {formatPrice(bookingDetails.pricePerDay)}
                 <Text style={styles.priceUnit}> /month</Text>
               </Text>
             </View>
@@ -125,12 +128,12 @@ const RentBookingScreen: React.FC = () => {
                 <Text style={styles.editText}>Edit</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.inputDetailRow}>
               <Text style={styles.inputLabel}>Date</Text>
               <Text style={styles.inputValue}>{bookingDetails.date}</Text>
             </View>
-            
+
             <View style={styles.inputDetailRow}>
               <Text style={styles.inputLabel}>Guests count</Text>
               <Text style={styles.inputValue}>{bookingDetails.guests} guests</Text>
@@ -145,31 +148,31 @@ const RentBookingScreen: React.FC = () => {
                 <Text style={styles.moreInfoText}>More info</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>
                 Staying duration ({bookingDetails.duration} days)
               </Text>
-              <Text style={styles.priceValue}>${totalStayingPrice.toLocaleString()}</Text>
+              <Text style={styles.priceValue}>{formatPrice(totalStayingPrice)}</Text>
             </View>
-            
+
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Service fee</Text>
-              <Text style={styles.priceValue}>${bookingDetails.serviceFee}</Text>
+              <Text style={styles.priceValue}>{formatPrice(bookingDetails.serviceFee)}</Text>
             </View>
-            
+
             <View style={styles.divider} />
-            
+
             <View style={styles.priceRow}>
               <Text style={styles.totalLabel}>Total price</Text>
-              <Text style={styles.totalValue}>${totalPrice.toLocaleString()}</Text>
+              <Text style={styles.totalValue}>{formatPrice(totalPrice)}</Text>
             </View>
           </View>
 
           {/* Pay With */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Pay with</Text>
-            
+
             {paymentMethods.map((method) => (
               <TouchableOpacity
                 key={method.id}
@@ -198,7 +201,7 @@ const RentBookingScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           {showPolicies && (
             <View style={styles.policiesContent}>
               <Text style={styles.policyText}>
@@ -222,7 +225,7 @@ const RentBookingScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Button */}
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity
           style={styles.bookingButton}
           onPress={handlePlaceBooking}

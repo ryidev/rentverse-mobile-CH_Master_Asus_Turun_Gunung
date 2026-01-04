@@ -3,6 +3,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { CurrencyProvider } from './src/context/CurrencyContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import { googleOAuthService } from './src/services';
 import { ENV } from './src/config/env';
@@ -19,9 +20,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <RootNavigator />
-          </AuthProvider>
+          <CurrencyProvider>
+            <AuthProvider>
+              <RootNavigator />
+            </AuthProvider>
+          </CurrencyProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

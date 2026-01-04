@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { useCurrency } from '../../context/CurrencyContext';
 
 // Mock Data for Bookings
 const bookings = [
@@ -41,6 +43,8 @@ const bookings = [
 const BookingHistoryScreen: React.FC = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { formatPrice } = useCurrency();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -120,7 +124,7 @@ const BookingHistoryScreen: React.FC = () => {
             </View>
 
             <View style={styles.footerRow}>
-              <Text style={[styles.priceText, { color: colors.text }]}>${item.price}</Text>
+              <Text style={[styles.priceText, { color: colors.text }]}>{formatPrice(item.price)}</Text>
               <TouchableOpacity style={styles.detailButton} onPress={() => { }}>
                 <Text style={[styles.detailButtonText, { color: colors.primary }]}>View Details</Text>
               </TouchableOpacity>
@@ -133,7 +137,7 @@ const BookingHistoryScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -187,7 +191,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60, // Adjust for status bar
     paddingBottom: 20,
   },
   backButton: {

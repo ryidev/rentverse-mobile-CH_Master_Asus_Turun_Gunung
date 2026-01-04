@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../../context/ThemeContext';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 interface PropertyCardProps {
   property: any;
@@ -17,6 +18,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   isFavorite = false
 }) => {
   const { colors } = useTheme();
+  const { formatPrice } = useCurrency();
 
   return (
     <TouchableOpacity
@@ -61,7 +63,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           </View>
         </View>
         <Text style={[styles.priceText, { color: colors.text }]}>
-          ${property.price}
+          {formatPrice(property.price)}
           <Text style={[styles.priceUnit, { color: colors.textSecondary }]}> /month</Text>
         </Text>
       </View>

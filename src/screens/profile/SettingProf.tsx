@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/CurrencyContext';
 
 interface SettingItem {
   id: string;
@@ -32,6 +33,7 @@ interface SettingSection {
 const SettingProfScreen: React.FC = () => {
   const navigation = useNavigation();
   const { theme, themeMode, setThemeMode, colors } = useTheme();
+  const { currency, setCurrency } = useCurrency();
 
   // Security Settings
   const [biometricEnabled, setBiometricEnabled] = useState(false);
@@ -228,13 +230,12 @@ const SettingProfScreen: React.FC = () => {
           id: 'currency',
           icon: 'currency-usd',
           title: 'Currency',
-          subtitle: 'IDR (Indonesian Rupiah)',
+          subtitle: currency === 'IDR' ? 'Indonesia (IDR)' : 'Malaysia (MYR)',
           type: 'navigation',
           onPress: () => {
             Alert.alert('Select Currency', 'Choose your preferred currency', [
-              { text: 'IDR (Rp)', onPress: () => {} },
-              { text: 'USD ($)', onPress: () => {} },
-              { text: 'EUR (€)', onPress: () => {} },
+              { text: 'Indonesia (IDR)', onPress: () => setCurrency('IDR') },
+              { text: 'Malaysia (MYR)', onPress: () => setCurrency('MYR') },
               { text: 'Cancel', style: 'cancel' },
             ]);
           },
@@ -260,7 +261,7 @@ const SettingProfScreen: React.FC = () => {
           subtitle: 'FAQ and support articles',
           type: 'navigation',
           onPress: () => {
-            Alert.alert('Help Center', 'Feature coming soon');
+            (navigation as any).navigate('Faq');
           },
         },
         {

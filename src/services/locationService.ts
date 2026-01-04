@@ -117,7 +117,7 @@ class LocationService {
         latitude: -7.2575,
         longitude: 112.7521,
       },
-      city: 'Surabaya',
+      city: 'Yogyakarta',
       state: 'East Java',
       country: 'Indonesia',
     };

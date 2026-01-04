@@ -14,6 +14,7 @@ import {
   PermissionsAndroid,
   TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Geolocation from '@react-native-community/geolocation';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -29,6 +30,8 @@ interface CreatePropertyFormProps {
   onBack?: () => void;
   onSuccess?: () => void;
   showHeader?: boolean;
+  initialData?: any;
+  mode?: 'create' | 'edit';
 }
 
 interface PropertyType {
@@ -52,35 +55,38 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
   onBack,
   onSuccess,
   showHeader = true,
+  initialData,
+  mode = 'create',
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const insets = useSafeAreaInsets(); // Get safe area insets
 
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    address: '',
-    city: '',
-    state: '',
-    country: 'MY',
-    zipCode: '',
-    latitude: 3.1390,
-    longitude: 101.6869,
-    placeId: '',
-    price: '',
-    currencyCode: 'MYR',
-    propertyTypeId: '',
-    bedrooms: '',
-    bathrooms: '',
-    areaSqm: '',
-    furnished: false,
+    title: initialData?.title || '',
+    description: initialData?.description || '',
+    address: initialData?.address || '',
+    city: initialData?.city || '',
+    state: initialData?.state || '',
+    country: initialData?.country || 'MY',
+    zipCode: initialData?.zipCode || '',
+    latitude: initialData?.latitude || 3.1390,
+    longitude: initialData?.longitude || 101.6869,
+    placeId: initialData?.placeId || '',
+    price: initialData?.price?.toString() || '',
+    currencyCode: initialData?.currencyCode || 'MYR',
+    propertyTypeId: initialData?.propertyTypeId || '',
+    bedrooms: initialData?.bedrooms?.toString() || '',
+    bathrooms: initialData?.bathrooms?.toString() || '',
+    areaSqm: initialData?.areaSqm?.toString() || '',
+    furnished: initialData?.furnished || false,
   });
 
   const [propertyTypes, setPropertyTypes] = useState<PropertyType[]>([]);
   const [amenities, setAmenities] = useState<Amenity[]>([]);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-  const [images, setImages] = useState<string[]>([]);
-  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>(initialData?.amenityIds || initialData?.amenities?.map((a: any) => a.id) || []);
+  const [images, setImages] = useState<string[]>(initialData?.images || []);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>(initialData?.images || []);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
@@ -89,7 +95,9 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
   useEffect(() => {
     fetchPropertyTypes();
     fetchAmenities();
-    requestLocationPermission();
+    if (mode === 'create') {
+      requestLocationPermission();
+    }
   }, []);
 
   const requestLocationPermission = async () => {
@@ -453,23 +461,36 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
         amenityIds: selectedAmenities,
       };
 
-      await apiService.post('/properties', propertyData);
-
-      Alert.alert('Success', 'Property created successfully', [
-        {
-          text: 'OK',
-          onPress: () => {
-            if (onSuccess) {
-              onSuccess();
-            }
+      if (mode === 'edit' && initialData?.id) {
+        await apiService.put(`/properties/${initialData.id}`, propertyData);
+        Alert.alert('Success', 'Property updated successfully', [
+          {
+            text: 'OK',
+            onPress: () => {
+              if (onSuccess) {
+                onSuccess();
+              }
+            },
           },
-        },
-      ]);
+        ]);
+      } else {
+        await apiService.post('/properties', propertyData);
+        Alert.alert('Success', 'Property created successfully', [
+          {
+            text: 'OK',
+            onPress: () => {
+              if (onSuccess) {
+                onSuccess();
+              }
+            },
+          },
+        ]);
+      }
     } catch (error: any) {
-      console.error('Error creating property:', error);
+      console.error('Error saving property:', error);
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'Failed to create property'
+        error.response?.data?.message || 'Failed to save property'
       );
     } finally {
       setIsLoading(false);
@@ -477,319 +498,327 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#000' : '#FFF' }}>
       {showHeader && (
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 10, backgroundColor: isDark ? '#000' : '#FFF' }]}>
           {onBack && (
-            <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <Icon name="arrow-back" size={24} color={isDark ? '#fff' : '#000'} />
+            <TouchableOpacity
+              onPress={onBack}
+              style={[styles.backButton]}
+            >
+              <Icon name="arrow-back" size={24} color={isDark ? '#FFF' : '#000'} />
             </TouchableOpacity>
           )}
           <View>
             <Text style={[styles.headerTitle, isDark && styles.textDark]}>
-              List Your Property
+              {mode === 'edit' ? 'Edit Your Property' : 'List Your Property'}
             </Text>
             <Text style={[styles.headerSubtitle, isDark && styles.textSecondaryDark]}>
-              Fill in the details to list your property for rent or sale.
+              {mode === 'edit' ? 'Update your property details.' : 'Fill in the details to list your property for rent or sale.'}
             </Text>
           </View>
         </View>
       )}
 
-      <View style={styles.content}>
-        {/* Property Title */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Property Title *</Text>
-          <TextInput
-            style={[styles.input, isDark && styles.inputDark]}
-            placeholder="e.g. Luxury Penthouse in KLCC"
-            placeholderTextColor={isDark ? '#666' : '#999'}
-            value={formData.title}
-            onChangeText={(value) => handleInputChange('title', value)}
-          />
-        </View>
-
-        {/* Property Type */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Property Type *</Text>
-          <TouchableOpacity
-            style={[styles.input, styles.inputWithIcon, isDark && styles.inputDark]}
-            onPress={() => setShowPropertyTypeModal(true)}
-          >
-            <Icon name="home-outline" size={20} color={isDark ? '#666' : '#999'} style={styles.inputIcon} />
-            <Text style={[styles.inputText, isDark && styles.textDark, !formData.propertyTypeId && styles.placeholderText]}>
-              {propertyTypes.find(pt => pt.id === formData.propertyTypeId)?.name || 'Select property type'}
-            </Text>
-            <Icon name="chevron-down" size={20} color={isDark ? '#666' : '#999'} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Address with Embedded Map */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Location *</Text>
-          <Text style={[styles.helperText, isDark && styles.textSecondaryDark]}>
-            Drag the marker or enter coordinates below
-          </Text>
-
-          {/* Embedded Map */}
-          <View style={styles.mapContainer}>
-            <MapTilerView
-              latitude={formData.latitude || 3.1390}
-              longitude={formData.longitude || 101.6869}
-              onLocationSelect={handleMapLocationSelect}
-              showLocationPicker
-              height={250}
-            />
-          </View>
-
-          {/* Latitude and Longitude Inputs */}
-          <View style={styles.row}>
-            <View style={[styles.inputGroup, styles.halfWidth]}>
-              <Text style={[styles.label, isDark && styles.textDark]}>Latitude *</Text>
-              <TextInput
-                style={[styles.input, isDark && styles.inputDark]}
-                placeholder="e.g. 3.1390"
-                placeholderTextColor={isDark ? '#666' : '#999'}
-                value={formData.latitude ? formData.latitude.toString() : ''}
-                onChangeText={handleLatitudeChange}
-                keyboardType="decimal-pad"
-              />
-            </View>
-
-            <View style={[styles.inputGroup, styles.halfWidth]}>
-              <Text style={[styles.label, isDark && styles.textDark]}>Longitude *</Text>
-              <TextInput
-                style={[styles.input, isDark && styles.inputDark]}
-                placeholder="e.g. 101.6869"
-                placeholderTextColor={isDark ? '#666' : '#999'}
-                value={formData.longitude ? formData.longitude.toString() : ''}
-                onChangeText={handleLongitudeChange}
-                keyboardType="decimal-pad"
-              />
-            </View>
-          </View>
-
-          {/* Address Text Input */}
-          <TextInput
-            style={[styles.input, isDark && styles.inputDark]}
-            placeholder="Enter address manually (optional)"
-            placeholderTextColor={isDark ? '#666' : '#999'}
-            value={formData.address}
-            onChangeText={(value) => handleInputChange('address', value)}
-          />
-        </View>
-
-        {/* City, State, Zip */}
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, styles.halfWidth]}>
-            <Text style={[styles.label, isDark && styles.textDark]}>City *</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+      >
+        <View style={styles.content}>
+          {/* Property Title */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Property Title *</Text>
             <TextInput
               style={[styles.input, isDark && styles.inputDark]}
-              placeholder="e.g. Kuala Lumpur"
+              placeholder="e.g. Luxury Penthouse in KLCC"
               placeholderTextColor={isDark ? '#666' : '#999'}
-              value={formData.city}
-              onChangeText={(value) => handleInputChange('city', value)}
+              value={formData.title}
+              onChangeText={(value) => handleInputChange('title', value)}
             />
           </View>
 
-          <View style={[styles.inputGroup, styles.halfWidth]}>
-            <Text style={[styles.label, isDark && styles.textDark]}>State *</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.inputDark]}
-              placeholder="e.g. Kuala Lumpur"
-              placeholderTextColor={isDark ? '#666' : '#999'}
-              value={formData.state}
-              onChangeText={(value) => handleInputChange('state', value)}
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Zip Code *</Text>
-          <TextInput
-            style={[styles.input, isDark && styles.inputDark]}
-            placeholder="e.g. 50450"
-            placeholderTextColor={isDark ? '#666' : '#999'}
-            value={formData.zipCode}
-            onChangeText={(value) => handleInputChange('zipCode', value)}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Currency and Price */}
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, styles.halfWidth]}>
-            <Text style={[styles.label, isDark && styles.textDark]}>Currency *</Text>
+          {/* Property Type */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Property Type *</Text>
             <TouchableOpacity
               style={[styles.input, styles.inputWithIcon, isDark && styles.inputDark]}
-              onPress={() => setShowCurrencyModal(true)}
+              onPress={() => setShowPropertyTypeModal(true)}
             >
-              <Text style={[styles.inputText, isDark && styles.textDark]}>
-                {CURRENCIES.find(c => c.code === formData.currencyCode)?.code || 'MYR'}
+              <Icon name="home-outline" size={20} color={isDark ? '#666' : '#999'} style={styles.inputIcon} />
+              <Text style={[styles.inputText, isDark && styles.textDark, !formData.propertyTypeId && styles.placeholderText]}>
+                {propertyTypes.find(pt => pt.id === formData.propertyTypeId)?.name || 'Select property type'}
               </Text>
               <Icon name="chevron-down" size={20} color={isDark ? '#666' : '#999'} />
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.inputGroup, styles.halfWidth]}>
-            <Text style={[styles.label, isDark && styles.textDark]}>
-              Price ({CURRENCIES.find(c => c.code === formData.currencyCode)?.symbol}) *
+          {/* Address with Embedded Map */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Location *</Text>
+            <Text style={[styles.helperText, isDark && styles.textSecondaryDark]}>
+              Drag the marker or enter coordinates below
             </Text>
-            <TextInput
-              style={[styles.input, isDark && styles.inputDark]}
-              placeholder="e.g. 8500"
-              placeholderTextColor={isDark ? '#666' : '#999'}
-              value={formData.price}
-              onChangeText={(value) => handleInputChange('price', value)}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
 
-        {/* Bedrooms, Bathrooms, Area */}
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, styles.thirdWidth]}>
-            <Text style={[styles.label, isDark && styles.textDark]}>Bedrooms *</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.inputDark]}
-              placeholder="e.g. 3"
-              placeholderTextColor={isDark ? '#666' : '#999'}
-              value={formData.bedrooms}
-              onChangeText={(value) => handleInputChange('bedrooms', value)}
-              keyboardType="numeric"
-            />
-          </View>
+            {/* Embedded Map */}
+            <View style={styles.mapContainer}>
+              <MapTilerView
+                latitude={formData.latitude || 3.1390}
+                longitude={formData.longitude || 101.6869}
+                onLocationSelect={handleMapLocationSelect}
+                showLocationPicker
+                height={250}
+              />
+            </View>
 
-          <View style={[styles.inputGroup, styles.thirdWidth]}>
-            <Text style={[styles.label, isDark && styles.textDark]}>Bathrooms *</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.inputDark]}
-              placeholder="e.g. 3"
-              placeholderTextColor={isDark ? '#666' : '#999'}
-              value={formData.bathrooms}
-              onChangeText={(value) => handleInputChange('bathrooms', value)}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={[styles.inputGroup, styles.thirdWidth]}>
-            <Text style={[styles.label, isDark && styles.textDark]}>Area (sqm) *</Text>
-            <TextInput
-              style={[styles.input, isDark && styles.inputDark]}
-              placeholder="e.g. 180"
-              placeholderTextColor={isDark ? '#666' : '#999'}
-              value={formData.areaSqm}
-              onChangeText={(value) => handleInputChange('areaSqm', value)}
-              keyboardType="numeric"
-            />
-          </View>
-        </View>
-
-        {/* Furnished Toggle */}
-        <View style={styles.switchRow}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Furnished</Text>
-          <TouchableOpacity
-            style={[styles.switch, formData.furnished && styles.switchActive]}
-            onPress={() => handleInputChange('furnished', !formData.furnished)}
-          >
-            <View style={[styles.switchThumb, formData.furnished && styles.switchThumbActive]} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Amenities */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Amenities</Text>
-          <View style={styles.amenitiesContainer}>
-            {amenities.map((amenity) => (
-              <TouchableOpacity
-                key={amenity.id}
-                style={[
-                  styles.amenityChip,
-                  isDark && styles.amenityChipDark,
-                  selectedAmenities.includes(amenity.id) && styles.amenityChipSelected,
-                ]}
-                onPress={() => toggleAmenity(amenity.id)}
-              >
-                <Icon
-                  name={amenity.icon || 'checkmark-circle-outline'}
-                  size={16}
-                  color={selectedAmenities.includes(amenity.id) ? '#fff' : (isDark ? '#999' : '#666')}
+            {/* Latitude and Longitude Inputs */}
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <Text style={[styles.label, isDark && styles.textDark]}>Latitude *</Text>
+                <TextInput
+                  style={[styles.input, isDark && styles.inputDark]}
+                  placeholder="e.g. 3.1390"
+                  placeholderTextColor={isDark ? '#666' : '#999'}
+                  value={formData.latitude ? formData.latitude.toString() : ''}
+                  onChangeText={handleLatitudeChange}
+                  keyboardType="decimal-pad"
                 />
-                <Text style={[
-                  styles.amenityText,
-                  isDark && styles.textDark,
-                  selectedAmenities.includes(amenity.id) && styles.amenityTextSelected,
-                ]}>
-                  {amenity.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+              </View>
+
+              <View style={[styles.inputGroup, styles.halfWidth]}>
+                <Text style={[styles.label, isDark && styles.textDark]}>Longitude *</Text>
+                <TextInput
+                  style={[styles.input, isDark && styles.inputDark]}
+                  placeholder="e.g. 101.6869"
+                  placeholderTextColor={isDark ? '#666' : '#999'}
+                  value={formData.longitude ? formData.longitude.toString() : ''}
+                  onChangeText={handleLongitudeChange}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+
+            {/* Address Text Input */}
+            <TextInput
+              style={[styles.input, isDark && styles.inputDark]}
+              placeholder="Enter address manually (optional)"
+              placeholderTextColor={isDark ? '#666' : '#999'}
+              value={formData.address}
+              onChangeText={(value) => handleInputChange('address', value)}
+            />
           </View>
-        </View>
 
-        {/* Property Images */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Property Images *</Text>
-          <TouchableOpacity
-            style={[styles.uploadButton, isDark && styles.uploadButtonDark]}
-            onPress={handleImagePicker}
-            disabled={isUploadingImages}
-          >
-            {isUploadingImages ? (
-              <ActivityIndicator size="small" color="#0F6980" />
-            ) : (
-              <>
-                <Icon name="camera-outline" size={24} color={isDark ? '#666' : '#999'} />
-                <Text style={[styles.uploadText, isDark && styles.textSecondaryDark]}>Upload Photos</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {/* City, State, Zip */}
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={[styles.label, isDark && styles.textDark]}>City *</Text>
+              <TextInput
+                style={[styles.input, isDark && styles.inputDark]}
+                placeholder="e.g. Kuala Lumpur"
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                value={formData.city}
+                onChangeText={(value) => handleInputChange('city', value)}
+              />
+            </View>
 
-          {images.length > 0 && (
-            <View style={styles.imagePreviewContainer}>
-              {images.map((uri, index) => (
-                <View key={index} style={styles.imagePreviewWrapper}>
-                  <Image source={{ uri }} style={styles.imagePreview} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => removeImage(index)}
-                  >
-                    <Icon name="close-circle" size={24} color="#FF3B30" />
-                  </TouchableOpacity>
-                </View>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={[styles.label, isDark && styles.textDark]}>State *</Text>
+              <TextInput
+                style={[styles.input, isDark && styles.inputDark]}
+                placeholder="e.g. Kuala Lumpur"
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                value={formData.state}
+                onChangeText={(value) => handleInputChange('state', value)}
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Zip Code *</Text>
+            <TextInput
+              style={[styles.input, isDark && styles.inputDark]}
+              placeholder="e.g. 50450"
+              placeholderTextColor={isDark ? '#666' : '#999'}
+              value={formData.zipCode}
+              onChangeText={(value) => handleInputChange('zipCode', value)}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Currency and Price */}
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={[styles.label, isDark && styles.textDark]}>Currency *</Text>
+              <TouchableOpacity
+                style={[styles.input, styles.inputWithIcon, isDark && styles.inputDark]}
+                onPress={() => setShowCurrencyModal(true)}
+              >
+                <Text style={[styles.inputText, isDark && styles.textDark]}>
+                  {CURRENCIES.find(c => c.code === formData.currencyCode)?.code || 'MYR'}
+                </Text>
+                <Icon name="chevron-down" size={20} color={isDark ? '#666' : '#999'} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={[styles.label, isDark && styles.textDark]}>
+                Price ({CURRENCIES.find(c => c.code === formData.currencyCode)?.symbol}) *
+              </Text>
+              <TextInput
+                style={[styles.input, isDark && styles.inputDark]}
+                placeholder="e.g. 8500"
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                value={formData.price}
+                onChangeText={(value) => handleInputChange('price', value)}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          {/* Bedrooms, Bathrooms, Area */}
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, styles.thirdWidth]}>
+              <Text style={[styles.label, isDark && styles.textDark]}>Bedrooms *</Text>
+              <TextInput
+                style={[styles.input, isDark && styles.inputDark]}
+                placeholder="e.g. 3"
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                value={formData.bedrooms}
+                onChangeText={(value) => handleInputChange('bedrooms', value)}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={[styles.inputGroup, styles.thirdWidth]}>
+              <Text style={[styles.label, isDark && styles.textDark]}>Bathrooms *</Text>
+              <TextInput
+                style={[styles.input, isDark && styles.inputDark]}
+                placeholder="e.g. 3"
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                value={formData.bathrooms}
+                onChangeText={(value) => handleInputChange('bathrooms', value)}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={[styles.inputGroup, styles.thirdWidth]}>
+              <Text style={[styles.label, isDark && styles.textDark]}>Area (sqm) *</Text>
+              <TextInput
+                style={[styles.input, isDark && styles.inputDark]}
+                placeholder="e.g. 180"
+                placeholderTextColor={isDark ? '#666' : '#999'}
+                value={formData.areaSqm}
+                onChangeText={(value) => handleInputChange('areaSqm', value)}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          {/* Furnished Toggle */}
+          <View style={styles.switchRow}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Furnished</Text>
+            <TouchableOpacity
+              style={[styles.switch, formData.furnished && styles.switchActive]}
+              onPress={() => handleInputChange('furnished', !formData.furnished)}
+            >
+              <View style={[styles.switchThumb, formData.furnished && styles.switchThumbActive]} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Amenities */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Amenities</Text>
+            <View style={styles.amenitiesContainer}>
+              {amenities.map((amenity) => (
+                <TouchableOpacity
+                  key={amenity.id}
+                  style={[
+                    styles.amenityChip,
+                    isDark && styles.amenityChipDark,
+                    selectedAmenities.includes(amenity.id) && styles.amenityChipSelected,
+                  ]}
+                  onPress={() => toggleAmenity(amenity.id)}
+                >
+                  <Icon
+                    name={amenity.icon || 'checkmark-circle-outline'}
+                    size={16}
+                    color={selectedAmenities.includes(amenity.id) ? '#fff' : (isDark ? '#999' : '#666')}
+                  />
+                  <Text style={[
+                    styles.amenityText,
+                    isDark && styles.textDark,
+                    selectedAmenities.includes(amenity.id) && styles.amenityTextSelected,
+                  ]}>
+                    {amenity.name}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </View>
-          )}
-        </View>
+          </View>
 
-        {/* Description */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, isDark && styles.textDark]}>Description *</Text>
-          <TextInput
-            style={[styles.input, styles.textArea, isDark && styles.inputDark]}
-            placeholder="Describe your property..."
-            placeholderTextColor={isDark ? '#666' : '#999'}
-            value={formData.description}
-            onChangeText={(value) => handleInputChange('description', value)}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
-        </View>
+          {/* Property Images */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Property Images *</Text>
+            <TouchableOpacity
+              style={[styles.uploadButton, isDark && styles.uploadButtonDark]}
+              onPress={handleImagePicker}
+              disabled={isUploadingImages}
+            >
+              {isUploadingImages ? (
+                <ActivityIndicator size="small" color="#0F6980" />
+              ) : (
+                <>
+                  <Icon name="camera-outline" size={24} color={isDark ? '#666' : '#999'} />
+                  <Text style={[styles.uploadText, isDark && styles.textSecondaryDark]}>Upload Photos</Text>
+                </>
+              )}
+            </TouchableOpacity>
 
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={[styles.submitButton, (isLoading || isUploadingImages) && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isLoading || isUploadingImages}
-        >
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.submitButtonText}>Submit Listing</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+            {images.length > 0 && (
+              <View style={styles.imagePreviewContainer}>
+                {images.map((uri, index) => (
+                  <View key={index} style={styles.imagePreviewWrapper}>
+                    <Image source={{ uri }} style={styles.imagePreview} />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => removeImage(index)}
+                    >
+                      <Icon name="close-circle" size={24} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Description */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.label, isDark && styles.textDark]}>Description *</Text>
+            <TextInput
+              style={[styles.input, styles.textArea, isDark && styles.inputDark]}
+              placeholder="Describe your property..."
+              placeholderTextColor={isDark ? '#666' : '#999'}
+              value={formData.description}
+              onChangeText={(value) => handleInputChange('description', value)}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={[styles.submitButton, (isLoading || isUploadingImages) && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isLoading || isUploadingImages}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>{mode === 'edit' ? 'Save Changes' : 'Submit Listing'}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
       {/* Property Type Modal */}
       <Modal
@@ -835,10 +864,10 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* Currency Modal */}
-      <Modal
+      < Modal
         visible={showCurrencyModal}
         animationType="slide"
         transparent
@@ -880,9 +909,9 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
-    </View>
+    </View >
   );
 };
 
