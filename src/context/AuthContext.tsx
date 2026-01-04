@@ -30,8 +30,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const userData = await authService.getCurrentUser();
         setUser(userData);
       }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
+    } catch (error: any) {
+      // Ignore 404 as it means user is not authenticated
+      if (error.response?.status !== 404) {
+        console.error('Error checking auth status:', error);
+      }
       await storageService.clearAll();
     } finally {
       setIsLoading(false);

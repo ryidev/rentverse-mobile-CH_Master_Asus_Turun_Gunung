@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCurrency } from '../../context/CurrencyContext';
 import { apiService } from '../../services/api';
+import { propertyService } from '../../services/propertyService';
 
 const { width } = Dimensions.get('window');
 
@@ -63,7 +64,7 @@ const PropertyDetailLandlord: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await apiService.delete(`/ properties / ${property.id} `);
+              await propertyService.deleteProperty(property.id);
               Alert.alert('Success', 'Property deleted successfully', [
                 {
                   text: 'OK',

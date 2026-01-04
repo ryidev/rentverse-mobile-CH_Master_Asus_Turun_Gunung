@@ -14,7 +14,8 @@ import { useTheme } from '../../context/ThemeContext';
 
 if (
   Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
+  UIManager.setLayoutAnimationEnabledExperimental &&
+  !((globalThis as any).nativeFabricUIManager)
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }

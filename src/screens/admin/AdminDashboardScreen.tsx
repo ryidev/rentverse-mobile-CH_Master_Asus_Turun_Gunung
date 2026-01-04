@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,73 +7,58 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Property } from '../../types';
-
-// Mock data for property requests
-const MOCK_REQUESTS: Property[] = [
-  {
-    id: 'req_1',
-    title: 'Modern Apartment in Jakarta Selatan',
-    description: 'Beautiful 2 bedroom apartment with city view. Near MRT station.',
-    price: 15000000,
-    location: 'Jakarta Selatan',
-    address: 'Jl. Sudirman No. 123',
-    bedrooms: 2,
-    bathrooms: 1,
-    area: 75,
-    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'],
-    amenities: [],
-    ownerId: 'user_1',
-    owner: {
-      id: 'user_1',
-      name: 'Budi Santoso',
-      email: 'budi@example.com',
-      createdAt: new Date().toISOString(),
-    },
-    rating: 0,
-    reviewCount: 0,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    status: 'pending',
-  },
-  {
-    id: 'req_2',
-    title: 'Cozy Villa in Bandung',
-    description: 'Perfect for weekend getaway. Mountain view and fresh air.',
-    price: 2500000,
-    location: 'Bandung',
-    address: 'Jl. Dago Pakar',
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 150,
-    images: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800'],
-    amenities: [],
-    ownerId: 'user_2',
-    owner: {
-      id: 'user_2',
-      name: 'Siti Aminah',
-      email: 'siti@example.com',
-      createdAt: new Date().toISOString(),
-    },
-    rating: 0,
-    reviewCount: 0,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    status: 'pending',
-  },
-];
+import { propertyService } from '../../services/propertyService';
 
 const AdminDashboardScreen: React.FC = () => {
   const { colors } = useTheme();
   const { logout } = useAuth();
-  const [requests, setRequests] = useState<Property[]>(MOCK_REQUESTS);
+  const navigation = useNavigation<any>();
+
+  const [requests, setRequests] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Filter & Sort State
+  const [filterStatus, setFilterStatus] = useState<'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'>('PENDING_REVIEW');
+  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
+  const [showSortModal, setShowSortModal] = useState(false);
+
+  const fetchRequests = async () => {
+    try {
+      setIsLoading(true);
+      const response = await propertyService.getPropertiesMobile({
+        status: filterStatus as any,
+        sortBy: sortBy as any
+      });
+      setRequests(response.properties);
+    } catch (error) {
+      console.error('Error fetching property requests:', error);
+      const errorMessage = (error as any).response?.data?.message || (error as any).message || 'Failed to load property requests';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, [filterStatus, sortBy]); // Re-fetch when filter or sort changes
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchRequests();
+  }, [filterStatus, sortBy]);
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -87,9 +72,20 @@ const AdminDashboardScreen: React.FC = () => {
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Approve',
-        onPress: () => {
-          setRequests(prev => prev.filter(req => req.id !== id));
-          Alert.alert('Success', 'Property has been approved and is now live.');
+        onPress: async () => {
+          try {
+            await propertyService.updatePropertyStatus(id, 'APPROVED');
+            // Remove from list if viewing pending, otherwise just refresh or update local state
+            if (filterStatus === 'PENDING_REVIEW') {
+              setRequests(prev => prev.filter(req => req.id !== id));
+            } else {
+              fetchRequests();
+            }
+            Alert.alert('Success', 'Property has been approved.');
+          } catch (error) {
+            console.error('Error approving property:', error);
+            Alert.alert('Error', 'Failed to approve property');
+          }
         }
       }
     ]);
@@ -101,13 +97,90 @@ const AdminDashboardScreen: React.FC = () => {
       {
         text: 'Reject',
         style: 'destructive',
-        onPress: () => {
-          setRequests(prev => prev.filter(req => req.id !== id));
-          Alert.alert('Rejected', 'Property request has been rejected.');
+        onPress: async () => {
+          try {
+            await propertyService.updatePropertyStatus(id, 'REJECTED');
+            if (filterStatus === 'PENDING_REVIEW') {
+              setRequests(prev => prev.filter(req => req.id !== id));
+            } else {
+              fetchRequests();
+            }
+            Alert.alert('Rejected', 'Property request has been rejected.');
+          } catch (error) {
+            console.error('Error rejecting property:', error);
+            Alert.alert('Error', 'Failed to reject property');
+          }
         }
       }
     ]);
   };
+
+  const renderSortModal = () => (
+    <Modal
+      visible={showSortModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowSortModal(false)}
+    >
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowSortModal(false)}
+      >
+        <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>Sort By</Text>
+
+          <TouchableOpacity
+            style={styles.modalOption}
+            onPress={() => { setSortBy('newest'); setShowSortModal(false); }}
+          >
+            <Text style={[styles.modalOptionText, { color: sortBy === 'newest' ? colors.primary : colors.text }]}>
+              Newest
+            </Text>
+            {sortBy === 'newest' && <Icon name="checkmark" size={20} color={colors.primary} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.modalOption}
+            onPress={() => { setSortBy('price_asc'); setShowSortModal(false); }}
+          >
+            <Text style={[styles.modalOptionText, { color: sortBy === 'price_asc' ? colors.primary : colors.text }]}>
+              Name (A-Z)
+            </Text>
+            {/* Note: Backend might not support title sort directly yet, using price_asc as placeholder or assuming update */}
+            {/* If user specifically requested name, and backend only supports price/newest/rating, we might need client side sort. 
+                 Or we map 'price_asc' to a 'title' param if we updated service properly. 
+                 The plan mentioned checking backend support. 
+                 For now let's assume 'price_asc' is just a placeholder and I will implement client side sort if backend fails for name 
+                 Actually, the user request "sesuai nama" means by name. 
+                 I'll use a local sort for Name if I can't rely on API */}
+            {sortBy === 'price_asc' && <Icon name="checkmark" size={20} color={colors.primary} />}
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
+  // Client-side sort for Name if selected, otherwise list is as is from API
+  // NOTE: 'price_asc' above is used as a key for 'Name'. 
+  // If API doesn't support name sort, we sort here.
+  // Client-side sort and filter to ensure consistency
+  const displayRequests = [...requests]
+    .filter(item => {
+      // Normalize statuses for comparison
+      const itemStatus = (item.status || 'PENDING_REVIEW').toUpperCase();
+      // Handle the 'PENDING' case which might be 'PENDING_REVIEW' or 'pending' from backend
+      if (filterStatus === 'PENDING_REVIEW') {
+        return itemStatus === 'PENDING_REVIEW';
+      }
+      return itemStatus === filterStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'price_asc') {
+        return a.title.localeCompare(b.title);
+      }
+      return 0; // Default or API sorted
+    });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -115,50 +188,102 @@ const AdminDashboardScreen: React.FC = () => {
         <View>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Admin Dashboard</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
-            {requests.length} Pending Approvals
+            {displayRequests.length} Properties
           </Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={[styles.logoutButton, { backgroundColor: colors.surface }]}>
-          <Icon name="log-out-outline" size={24} color={colors.error} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity onPress={() => setShowSortModal(true)} style={[styles.iconButton, { backgroundColor: colors.surface, marginRight: 8 }]}>
+            <Icon name="filter-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout} style={[styles.iconButton, { backgroundColor: colors.surface }]}>
+            <Icon name="log-out-outline" size={24} color={colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {requests.length === 0 ? (
+      {/* Filter Tabs */}
+      <View style={styles.tabContainer}>
+        {[
+          { label: 'PENDING', value: 'PENDING_REVIEW' },
+          { label: 'APPROVED', value: 'APPROVED' },
+          { label: 'REJECTED', value: 'REJECTED' }
+        ].map((tab) => (
+          <TouchableOpacity
+            key={tab.value}
+            style={[
+              styles.tab,
+              filterStatus === tab.value && { borderBottomColor: colors.primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setFilterStatus(tab.value as any)}
+          >
+            <Text style={[
+              styles.tabText,
+              { color: filterStatus === tab.value ? colors.primary : colors.textSecondary }
+            ]}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+        }
+      >
+        {isLoading ? (
+          <View style={{ marginTop: 100 }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : displayRequests.length === 0 ? (
           <View style={styles.emptyState}>
             <Icon name="checkmark-circle-outline" size={80} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>All caught up! No pending requests.</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No {filterStatus.toLowerCase()} properties found.</Text>
           </View>
         ) : (
-          requests.map((item) => (
+          displayRequests.map((item) => (
             <View key={item.id} style={[styles.card, { backgroundColor: colors.card, shadowColor: '#000' }]}>
-              <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('PropertyDetailFull', { property: item })}
+              >
+                <Image source={{ uri: item.images[0] }} style={styles.cardImage} />
 
-              <View style={styles.cardContent}>
-                <View style={styles.row}>
-                  <View style={styles.tagContainer}>
-                    <Text style={styles.tagText}>REQUEST</Text>
+                <View style={styles.cardContent}>
+                  <View style={styles.row}>
+                    <View style={[styles.tagContainer,
+                    item.status === 'APPROVED' ? { backgroundColor: '#E6F4EA' } :
+                      item.status === 'REJECTED' ? { backgroundColor: '#FDECEA' } : {}
+                    ]}>
+                      <Text style={[styles.tagText,
+                      item.status === 'APPROVED' ? { color: '#1E8E3E' } :
+                        item.status === 'REJECTED' ? { color: '#D93025' } : {}
+                      ]}>{item.status || 'admin '}</Text>
+                    </View>
+                    <Text style={[styles.date, { color: colors.textSecondary }]}>
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </Text>
                   </View>
-                  <Text style={[styles.date, { color: colors.textSecondary }]}>
-                    {new Date(item.createdAt).toLocaleDateString()}
+
+                  <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.price, { color: colors.primary }]}>
+                    Rp {item.price.toLocaleString('id-ID')} / month
                   </Text>
+
+                  <View style={styles.ownerInfo}>
+                    <Icon name="person-circle-outline" size={20} color={colors.textSecondary} />
+                    <Text style={[styles.ownerName, { color: colors.textSecondary }]}>
+                      {item.owner?.name} ({item.owner?.email})
+                    </Text>
+                  </View>
+
+                  {filterStatus === 'PENDING_REVIEW' && <View style={styles.divider} />}
                 </View>
+              </TouchableOpacity>
 
-                <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
-                <Text style={[styles.price, { color: colors.primary }]}>
-                  Rp {item.price.toLocaleString('id-ID')} / month
-                </Text>
-
-                <View style={styles.ownerInfo}>
-                  <Icon name="person-circle-outline" size={20} color={colors.textSecondary} />
-                  <Text style={[styles.ownerName, { color: colors.textSecondary }]}>
-                    {item.owner?.name} ({item.owner?.email})
-                  </Text>
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.actions}>
+              {filterStatus === 'PENDING_REVIEW' && (
+                <View style={[styles.actions, { paddingHorizontal: 16, paddingBottom: 16 }]}>
                   <TouchableOpacity
                     style={[styles.actionButton, styles.rejectButton]}
                     onPress={() => handleReject(item.id, item.title)}
@@ -172,11 +297,12 @@ const AdminDashboardScreen: React.FC = () => {
                     <Text style={styles.approveText}>Approve</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              )}
             </View>
           ))
         )}
       </ScrollView>
+      {renderSortModal()}
     </SafeAreaView>
   );
 };
@@ -194,36 +320,58 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   headerSubtitle: {
     fontSize: 14,
     marginTop: 4,
   },
-  logoutButton: {
-    padding: 8,
+  iconButton: {
+    padding: 10,
     borderRadius: 12,
+  },
+  logoutButton: {
+    padding: 10,
+    borderRadius: 12,
+  },
+  // Tabs
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  tab: {
+    marginRight: 20,
+    paddingBottom: 10,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   content: {
     padding: 20,
-    paddingBottom: 40,
+    paddingTop: 0,
   },
+  // empty state
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 100,
-    gap: 16,
+    paddingTop: 80,
   },
   emptyText: {
+    marginTop: 16,
     fontSize: 16,
   },
+  // card
   card: {
     borderRadius: 16,
     marginBottom: 20,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: 10,
     elevation: 3,
   },
   cardImage: {
@@ -233,6 +381,7 @@ const styles = StyleSheet.create({
   cardContent: {
     padding: 16,
   },
+  // row & tags
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -240,15 +389,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tagContainer: {
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 8,
+    backgroundColor: '#FFE8CC',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   tagText: {
-    fontSize: 10,
+    color: '#FD7E14',
+    fontSize: 12,
     fontWeight: '700',
-    color: '#1565C0',
   },
   date: {
     fontSize: 12,
@@ -260,21 +409,21 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 12,
   },
   ownerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     marginBottom: 16,
   },
   ownerName: {
-    fontSize: 13,
+    marginLeft: 8,
+    fontSize: 14,
   },
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#F0F0F0',
     marginBottom: 16,
   },
   actions: {
@@ -283,28 +432,53 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    height: 44,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rejectButton: {
+    backgroundColor: '#FFF5F5',
+  },
+  approveButton: {},
+  rejectText: {
+    color: '#E03131',
+    fontWeight: '600',
+  },
+  approveText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rejectButton: {
-    backgroundColor: '#ff0000ff',
-    borderWidth: 1,
-    borderColor: '#EF4444',
+  modalContent: {
+    width: '80%',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 5,
   },
-  approveButton: {
-    // Background color set via props
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
   },
-  rejectText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
+  modalOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  approveText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 14,
+  modalOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

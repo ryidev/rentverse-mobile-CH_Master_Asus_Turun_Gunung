@@ -6,6 +6,7 @@ import {
   CreateReviewData,
   Favorite,
 } from '../types';
+import { ENV } from '../config/env';
 
 export const propertyService = {
   // Property CRUD
@@ -149,7 +150,9 @@ export const propertyService = {
   },
 
   async deleteProperty(id: string): Promise<void> {
-    return apiService.delete<void>(`/properties/${id}`);
+    // The DELETE endpoint is at /api/v1/properties (no /m), so we remove /m from base URL
+    const baseUrl = ENV.API_BASE_URL.replace(/\/m$/, '');
+    return apiService.delete<void>(`${baseUrl}/properties/${id}`);
   },
 
   async uploadPropertyImages(propertyId: string, formData: FormData): Promise<{ imageUrls: string[] }> {
@@ -221,5 +224,55 @@ export const propertyService = {
       '/properties/predict-price',
       data
     );
+  },
+  async getPropertiesMobile(params?: {
+    page?: number;
+    limit?: number;
+    city?: string;
+    state?: string;
+    country?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    bedrooms?: number;
+    bathrooms?: number;
+    propertyTypeId?: string;
+    furnished?: boolean;
+    search?: string;
+    sortBy?: 'price_asc' | 'price_desc' | 'newest' | 'rating';
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PENDING_REVIEW';
+  }): Promise<{ properties: Property[]; total: number; page: number; limit: number }> {
+    // Check if the backend returns standard wrapped response format
+    const response = await apiService.get<{
+      success: boolean;
+      data: {
+        properties: Property[];
+        count: number; // API often returns 'count' or 'total'
+        page: number;
+        limit: number;
+        total?: number;
+      }
+    }>('/properties', {
+      params,
+    });
+
+    // Depending on actual API shape, it might be in response.data or just response if existing interceptors handle it
+    // Based on getPropertiesWithFilters, it expects response.data.properties
+
+    // Safety check just in case response is the direct object
+    const data = response.data || response;
+
+    return {
+      properties: data.properties || [],
+      total: data.count || data.total || 0,
+      page: data.page || 1,
+      limit: data.limit || 10
+    };
+  },
+
+  async updatePropertyStatus(id: string, status: 'APPROVED' | 'REJECTED'): Promise<Property> {
+    return apiService.put<Property>(`/properties/${id}`, { status });
   },
 };

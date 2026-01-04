@@ -52,7 +52,7 @@ export interface Property {
   isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: 'pending_review' | 'approved' | 'rejected' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
 }
 
 export interface CreatePropertyData {
@@ -113,7 +113,7 @@ export interface Booking {
   checkOut: string;
   guests: number;
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending_review' | 'confirmed' | 'cancelled' | 'completed';
   createdAt: string;
 }
 
@@ -128,7 +128,7 @@ export interface CreateBookingData {
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
-  AdminDashboard: undefined;
+  AdminStack: undefined;
 };
 
 

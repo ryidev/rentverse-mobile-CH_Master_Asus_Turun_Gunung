@@ -129,7 +129,7 @@ const BookingsScreen: React.FC = () => {
         </View>
       </View>
 
-      {item.status === 'pending' && (
+      {item.status === 'pending_review' && (
         <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => handleCancelBooking(item.id)}

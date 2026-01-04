@@ -298,6 +298,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 12,
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   divider: {
     height: 1,
     backgroundColor: '#E2E8F0',

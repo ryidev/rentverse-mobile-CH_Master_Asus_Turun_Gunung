@@ -98,6 +98,7 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [showPropertyTypeModal, setShowPropertyTypeModal] = useState(false);
   const [showCountryModal, setShowCountryModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   useEffect(() => {
     fetchPropertyTypes();
@@ -770,32 +771,76 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
 
           {/* Amenities */}
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, isDark && styles.textDark]}>Amenities</Text>
-            <View style={styles.amenitiesContainer}>
-              {amenities.map((amenity) => (
+            <Text style={[styles.label, isDark && styles.textDark]}>Amenity Category</Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryFilterContainer}
+              contentContainerStyle={styles.categoryFilterContent}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.categoryChip,
+                  selectedCategory === 'All' && styles.categoryChipSelected,
+                  isDark && selectedCategory !== 'All' && styles.categoryChipDark
+                ]}
+                onPress={() => setSelectedCategory('All')}
+              >
+                <Text style={[
+                  styles.categoryChipText,
+                  selectedCategory === 'All' && styles.categoryChipTextSelected,
+                  isDark && selectedCategory !== 'All' && styles.textDark
+                ]}>All</Text>
+              </TouchableOpacity>
+
+              {Array.from(new Set(amenities.map(a => a.category || 'Other').filter(Boolean))).sort().map(category => (
                 <TouchableOpacity
-                  key={amenity.id}
+                  key={category}
                   style={[
-                    styles.amenityChip,
-                    isDark && styles.amenityChipDark,
-                    selectedAmenities.includes(amenity.id) && styles.amenityChipSelected,
+                    styles.categoryChip,
+                    selectedCategory === category && styles.categoryChipSelected,
+                    isDark && selectedCategory !== category && styles.categoryChipDark
                   ]}
-                  onPress={() => toggleAmenity(amenity.id)}
+                  onPress={() => setSelectedCategory(category)}
                 >
-                  <Icon
-                    name={amenity.icon || 'checkmark-circle-outline'}
-                    size={16}
-                    color={selectedAmenities.includes(amenity.id) ? '#fff' : (isDark ? '#999' : '#666')}
-                  />
                   <Text style={[
-                    styles.amenityText,
-                    isDark && styles.textDark,
-                    selectedAmenities.includes(amenity.id) && styles.amenityTextSelected,
-                  ]}>
-                    {amenity.name}
-                  </Text>
+                    styles.categoryChipText,
+                    selectedCategory === category && styles.categoryChipTextSelected,
+                    isDark && selectedCategory !== category && styles.textDark
+                  ]}>{category}</Text>
                 </TouchableOpacity>
               ))}
+            </ScrollView>
+
+            <Text style={[styles.label, isDark && styles.textDark, { marginTop: 16 }]}>Amenities</Text>
+            <View style={styles.amenitiesContainer}>
+              {amenities
+                .filter(a => selectedCategory === 'All' || (a.category || 'Other') === selectedCategory)
+                .map((amenity) => (
+                  <TouchableOpacity
+                    key={amenity.id}
+                    style={[
+                      styles.amenityChip,
+                      isDark && styles.amenityChipDark,
+                      selectedAmenities.includes(amenity.id) && styles.amenityChipSelected,
+                    ]}
+                    onPress={() => toggleAmenity(amenity.id)}
+                  >
+                    {/* Icon removed to match design or can be kept if user wants icons. Design ref image didn't show icons, just text pills. 
+                      User asked for "desain kategorinya seperti pada gambar". 
+                      The image shows just text in pills for amenities. I'll keep it simple or matches the chip style. 
+                      The previous code had icons. I'll keep icons for now as it adds value, but style the chip to look like the design.
+                  */}
+                    <Text style={[
+                      styles.amenityText,
+                      isDark && styles.textDark,
+                      selectedAmenities.includes(amenity.id) && styles.amenityTextSelected,
+                    ]}>
+                      {amenity.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
             </View>
           </View>
 
@@ -1150,6 +1195,47 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   amenityTextSelected: {
+    color: '#fff',
+  },
+  amenityCategorySection: {
+    marginBottom: 16,
+  },
+  amenityCategoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  categoryFilterContainer: {
+    marginBottom: 8,
+  },
+  categoryFilterContent: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    backgroundColor: '#fff',
+    marginRight: 8,
+  },
+  categoryChipDark: {
+    backgroundColor: '#2C2C2E',
+    borderColor: '#3A3A3C',
+  },
+  categoryChipSelected: {
+    backgroundColor: '#0F6980',
+    borderColor: '#0F6980',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
+  },
+  categoryChipTextSelected: {
     color: '#fff',
   },
   uploadButton: {

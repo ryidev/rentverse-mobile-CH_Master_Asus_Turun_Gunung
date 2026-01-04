@@ -55,7 +55,7 @@ const RootNavigator: React.FC = () => {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           user?.role === 'admin' ? (
-            <Stack.Screen name="AdminDashboard" component={require('../screens/admin/AdminDashboardScreen').default} />
+            <Stack.Screen name="AdminStack" component={require('./AdminNavigator').default} />
           ) : (
             <Stack.Screen name="Main" component={MainNavigator} />
           )
