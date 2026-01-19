@@ -37,7 +37,7 @@ const AdminDashboardScreen: React.FC = () => {
     try {
       setIsLoading(true);
       const response = await propertyService.getPropertiesMobile({
-        status: filterStatus as any,
+        status: filterStatus === 'PENDING_REVIEW' ? 'REVIEW_PENDING' as any : filterStatus as any,
         sortBy: sortBy as any
       });
       setRequests(response.properties);
@@ -171,7 +171,7 @@ const AdminDashboardScreen: React.FC = () => {
       const itemStatus = (item.status || 'PENDING_REVIEW').toUpperCase();
       // Handle the 'PENDING' case which might be 'PENDING_REVIEW' or 'pending' from backend
       if (filterStatus === 'PENDING_REVIEW') {
-        return itemStatus === 'PENDING_REVIEW';
+        return itemStatus === 'PENDING_REVIEW' || itemStatus === 'REVIEW_PENDING' || itemStatus === 'PENDING';
       }
       return itemStatus === filterStatus;
     })

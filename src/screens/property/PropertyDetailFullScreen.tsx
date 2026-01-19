@@ -25,6 +25,9 @@ const PropertyDetailFullScreen: React.FC = () => {
   const { formatPrice } = useCurrency();
   const insets = useSafeAreaInsets();
 
+  // Get property's currency code (fallback to IDR if not set)
+  const currencyCode = property?.currencyCode || 'IDR';
+
   const [isFavorite, setIsFavorite] = useState(false);
   const fadeAnim = new Animated.Value(0);
   const slideAnim = new Animated.Value(30);
@@ -241,7 +244,7 @@ const PropertyDetailFullScreen: React.FC = () => {
           <View style={styles.section}>
             <View style={styles.costCard}>
               <Text style={styles.costLabel}>Average living cost</Text>
-              <Text style={styles.costValue}>{formatPrice(property?.price || 0)}/month</Text>
+              <Text style={styles.costValue}>{formatPrice(property?.price || 0, currencyCode)}/month</Text>
             </View>
           </View>
 
@@ -280,7 +283,7 @@ const PropertyDetailFullScreen: React.FC = () => {
       {/* Bottom Bar */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16, paddingTop: 16 }]}>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceAmount}>{formatPrice(property?.price || 0)}</Text>
+          <Text style={styles.priceAmount}>{formatPrice(property?.price || 0, currencyCode)}</Text>
           <Text style={styles.priceUnit}> /month</Text>
         </View>
         <TouchableOpacity

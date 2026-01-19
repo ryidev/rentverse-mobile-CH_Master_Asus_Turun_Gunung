@@ -11,6 +11,7 @@ interface AuthContextType {
   register: (data: RegisterData, authResponse?: AuthResponse) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
+  updateProfile: (userData: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,6 +91,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateProfile = async (userData: Partial<User>) => {
+    try {
+      console.log('Calling updateProfile API with data:', userData);
+
+      // Optimistic update: immediately update local state with the data we're sending
+      if (user) {
+        const optimisticUser = { ...user, ...userData };
+        console.log('Optimistically updating user to:', optimisticUser);
+        setUser(optimisticUser);
+        await storageService.saveUserData(optimisticUser);
+      }
+
+      // Then call API in background
+      await authService.updateProfile(userData);
+      console.log('API call completed successfully');
+
+
+      console.log('Profile updated successfully in state');
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -100,6 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         register,
         logout,
         updateUser,
+        updateProfile,
       }}
     >
       {children}

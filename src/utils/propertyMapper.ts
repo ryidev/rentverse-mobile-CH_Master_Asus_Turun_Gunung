@@ -1,5 +1,8 @@
 // Helper function to map backend property data to PropertyCard format
+// Helper function to map backend property data to PropertyCard format
 export const mapPropertyToCard = (property: any) => {
+  if (!property) return null;
+
   // Calculate average rating from backend data
   const averageRating = property.averageRating || 0;
   const ratingCount = property.ratingCount || property._count?.ratings || 0;
@@ -30,5 +33,6 @@ export const mapPropertyToCard = (property: any) => {
 };
 
 export const mapPropertiesToCards = (properties: any[]) => {
-  return properties.map(mapPropertyToCard);
+  if (!Array.isArray(properties)) return [];
+  return properties.map(mapPropertyToCard).filter(Boolean);
 };

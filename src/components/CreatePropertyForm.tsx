@@ -20,6 +20,7 @@ import Geolocation from '@react-native-community/geolocation';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../context/ThemeContext';
 import { apiService } from '../services/api';
+import { propertyService } from '../services/propertyService';
 import { storageService } from '../utils/storage';
 import { locationService } from '../services/locationService';
 import MapTilerView from './MapTilerView';
@@ -489,19 +490,17 @@ const CreatePropertyForm: React.FC<CreatePropertyFormProps> = ({
       };
 
       if (mode === 'edit' && initialData?.id) {
-        await apiService.put(`/properties/${initialData.id}`, propertyData);
+        await propertyService.updateProperty(initialData.id, propertyData);
         Alert.alert('Success', 'Property updated successfully', [
           {
             text: 'OK',
             onPress: () => {
-              if (onSuccess) {
-                onSuccess();
-              }
+              if (onSuccess) onSuccess();
             },
           },
         ]);
       } else {
-        await apiService.post('/properties', propertyData);
+        await propertyService.createProperty(propertyData);
         Alert.alert('Success', 'Property created successfully', [
           {
             text: 'OK',

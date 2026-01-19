@@ -63,7 +63,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           </View>
         </View>
         <Text style={[styles.priceText, { color: colors.text }]}>
-          {formatPrice(property.price)}
+          {formatPrice(property.price, property.currencyCode || 'IDR')}
           <Text style={[styles.priceUnit, { color: colors.textSecondary }]}> /month</Text>
         </Text>
       </View>

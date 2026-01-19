@@ -18,11 +18,11 @@ import { useTheme } from '../../context/ThemeContext';
 const PersonalScreen: React.FC = () => {
   const { user, updateProfile } = useAuth();
   const { colors } = useTheme();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Form state
   const [profileImage, setProfileImage] = useState(user?.avatar || '');
   const [name, setName] = useState(user?.name || '');
@@ -31,7 +31,7 @@ const PersonalScreen: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // Form validation
   const [errors, setErrors] = useState({
     name: '',
@@ -41,7 +41,9 @@ const PersonalScreen: React.FC = () => {
   });
 
   useEffect(() => {
+    console.log('PersonalProf useEffect triggered with user:', user);
     if (user) {
+      console.log('Resetting form fields to:', { name: user.name, email: user.email, phone: user.phone });
       setProfileImage(user.avatar || '');
       setName(user.name || '');
       setEmail(user.email || '');
@@ -143,17 +145,21 @@ const PersonalScreen: React.FC = () => {
         }),
       };
 
+      console.log('PersonalProf: Updating profile with data:', updateData);
+
       // Call update profile API
       await updateProfile(updateData);
-      
+
+      console.log('PersonalProf: Update completed successfully');
       Alert.alert('Success', 'Profile updated successfully');
       setIsEditing(false);
-      
+
       // Clear password fields
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
+      console.error('PersonalProf: Update failed:', error);
       Alert.alert('Error', error.message || 'Failed to update profile');
     } finally {
       setIsLoading(false);
@@ -186,7 +192,7 @@ const PersonalScreen: React.FC = () => {
                 <Icon name="account" size={60} color={colors.textSecondary} />
               </View>
             )}
-            
+
             <TouchableOpacity
               style={[styles.editImageButton, { backgroundColor: colors.card, borderColor: colors.card }]}
               onPress={handleImagePicker}
@@ -195,7 +201,7 @@ const PersonalScreen: React.FC = () => {
               <Icon name="camera" size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
-          
+
           <Text style={[styles.profileName, { color: colors.text }]}>{name || 'Your Name'}</Text>
           <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{email || 'your.email@example.com'}</Text>
         </View>
@@ -203,7 +209,7 @@ const PersonalScreen: React.FC = () => {
         {/* Form Section */}
         <View style={styles.formSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Personal Information</Text>
-          
+
           <Input
             label="Full Name"
             value={name}

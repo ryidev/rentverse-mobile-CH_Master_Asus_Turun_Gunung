@@ -59,10 +59,13 @@ export const authService = {
   },
 
   async updateProfile(data: Partial<User>): Promise<User> {
-    return apiService.put<User>('/auth/profile', data);
+    const response = await apiService.put<any>('/users/profile', data);
+    // Backend returns {success: true, message: "...", data: {...}}
+    // We need to extract the user data
+    return response.data || response;
   },
 
   async uploadAvatar(formData: FormData): Promise<{ avatarUrl: string }> {
-    return apiService.uploadFormData<{ avatarUrl: string }>('/auth/avatar', formData);
+    return apiService.uploadFormData<{ avatarUrl: string }>('/users/avatar', formData);
   },
 };

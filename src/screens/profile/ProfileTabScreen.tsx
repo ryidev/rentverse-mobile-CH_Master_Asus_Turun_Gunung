@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 const ProfileTabScreen: React.FC = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const insets = useSafeAreaInsets();
 
   // Animations
@@ -74,15 +74,17 @@ const ProfileTabScreen: React.FC = () => {
       <View style={[styles.header, { paddingTop: insets.top + 30 }]}>
         <Animated.View style={[styles.avatarContainer, { transform: [{ scale: scaleAnim }], opacity: fadeAnim }]}>
           <Image
-            source={{ uri: 'https://assets.pikiran-rakyat.com/crop/0x0:0x0/720x0/webp/photo/2025/09/26/1043297320.jpg' }}
+            source={{
+              uri: user?.avatarUrl || user?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.name || 'User') + '&size=200&background=6366f1&color=fff'
+            }}
             style={styles.avatar}
           />
         </Animated.View>
         <Animated.Text style={[styles.name, { color: colors.text, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          Asus Turun Gunung
+          {user?.name || 'User Name'}
         </Animated.Text>
         <Animated.Text style={[styles.email, { color: colors.textSecondary, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          asusturungunung@gmail.com
+          {user?.email || 'user@example.com'}
         </Animated.Text>
       </View>
 
@@ -125,17 +127,6 @@ const ProfileTabScreen: React.FC = () => {
       </View>
 
       <View style={styles.divider} />
-
-      {/* Switch to Hosting */}
-      <View style={styles.menuSection}>
-        <TouchableOpacity style={styles.menuItem}>
-          <View style={styles.iconContainer}>
-            <Icon name="home-outline" size={24} color="#000" />
-          </View>
-          <Text style={styles.menuText}>Switch to hosting</Text>
-          <Icon name="chevron-forward" size={24} color="#94A3B8" />
-        </TouchableOpacity>
-      </View>
 
       {/* Logout */}
       <View style={styles.menuSection}>

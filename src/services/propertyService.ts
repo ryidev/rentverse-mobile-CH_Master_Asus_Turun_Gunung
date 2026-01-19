@@ -59,8 +59,8 @@ export const propertyService = {
       params,
     });
     return {
-      properties: response.data.properties,
-      total: response.data.count,
+      properties: response.data?.properties || [],
+      total: response.data?.count || 0,
     };
   },
 
@@ -80,8 +80,8 @@ export const propertyService = {
       params,
     });
     return {
-      properties: response.data.properties,
-      total: response.data.count,
+      properties: response.data?.properties || [],
+      total: response.data?.count || 0,
     };
   },
 
@@ -99,7 +99,7 @@ export const propertyService = {
     }>('/properties/stats', {
       params,
     });
-    return response.data;
+    return response.data || { total: 0, byCity: [] };
   },
 
   async getUserFavorites(params?: {
@@ -121,8 +121,8 @@ export const propertyService = {
       params,
     });
     return {
-      properties: response.data.favorites,
-      total: response.data.pagination.total,
+      properties: response.data?.favorites || [],
+      total: response.data?.pagination?.total || 0,
     };
   },
 
@@ -142,11 +142,15 @@ export const propertyService = {
   },
 
   async createProperty(data: CreatePropertyData): Promise<Property> {
-    return apiService.post<Property>('/properties', data);
+    // The POST endpoint is at /api/v1/properties (no /m), so we remove /m from base URL
+    const baseUrl = ENV.API_BASE_URL.replace(/\/m$/, '');
+    return apiService.post<Property>(`${baseUrl}/properties`, data);
   },
 
   async updateProperty(id: string, data: Partial<CreatePropertyData>): Promise<Property> {
-    return apiService.put<Property>(`/properties/${id}`, data);
+    // The PUT endpoint is at /api/v1/properties (no /m), so we remove /m from base URL
+    const baseUrl = ENV.API_BASE_URL.replace(/\/m$/, '');
+    return apiService.put<Property>(`${baseUrl}/properties/${id}`, data);
   },
 
   async deleteProperty(id: string): Promise<void> {
@@ -242,7 +246,7 @@ export const propertyService = {
     latitude?: number;
     longitude?: number;
     radius?: number;
-    status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PENDING_REVIEW';
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PENDING_REVIEW' | 'REVIEW_PENDING';
   }): Promise<{ properties: Property[]; total: number; page: number; limit: number }> {
     // Check if the backend returns standard wrapped response format
     const response = await apiService.get<{

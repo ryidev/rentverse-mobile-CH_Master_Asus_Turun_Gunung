@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { propertyService } from '../../services/propertyService';
 import { apiService } from '../../services/api';
 import { locationService, LocationInfo } from '../../services/locationService';
@@ -28,6 +29,7 @@ import CreatePropertyForm from '../../components/CreatePropertyForm';
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const [selectedTab, setSelectedTab] = useState<'rent' | 'buy'>('rent');
   const [listingMode, setListingMode] = useState<'list' | 'create'>('list');
   const insets = useSafeAreaInsets();
@@ -358,12 +360,18 @@ const HomeScreen: React.FC = () => {
                 <Icon name="chevron-down" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
-            <View style={styles.avatarContainer}>
+            <TouchableOpacity
+              style={styles.avatarContainer}
+              onPress={() => (navigation as any).navigate('Profile')}
+              activeOpacity={0.7}
+            >
               <Image
-                source={{ uri: 'https://assets.pikiran-rakyat.com/crop/0x0:0x0/720x0/webp/photo/2025/09/26/1043297320.jpg' }}
+                source={{
+                  uri: user?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.name || 'User') + '&size=200&background=6366f1&color=fff'
+                }}
                 style={styles.avatar}
               />
-            </View>
+            </TouchableOpacity>
           </Animated.View>
 
           {/* Search Bar - Always Visible */}

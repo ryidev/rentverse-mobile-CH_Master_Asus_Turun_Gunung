@@ -52,13 +52,15 @@ export interface Property {
   isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
-  status?: 'pending_review' | 'approved' | 'rejected' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+  status?: 'pending_review' | 'approved' | 'rejected' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'REVIEW_PENDING';
+  currencyCode?: string; // Store property's original currency (IDR, MYR, etc)
 }
 
 export interface CreatePropertyData {
   title: string;
   description: string;
   price: number;
+  currencyCode?: string; // Must save currency when creating property!
   location: string;
   address: string;
   bedrooms: number;
