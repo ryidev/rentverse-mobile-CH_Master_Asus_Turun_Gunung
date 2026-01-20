@@ -23,7 +23,8 @@ class ApiService {
     this.api.interceptors.request.use(
       async (config) => {
         const token = await storageService.getToken();
-        if (token && config.headers) {
+        // Cast config to any to access custom skipAuth property without type errors
+        if (token && config.headers && !(config as any).skipAuth) {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
@@ -111,7 +112,7 @@ class ApiService {
     );
   }
 
-  async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async get<T>(url: string, config?: AxiosRequestConfig & { skipAuth?: boolean }): Promise<T> {
     const response = await this.api.get<T>(url, config);
     return response.data;
   }

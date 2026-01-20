@@ -179,23 +179,36 @@ export const propertyService = {
 
 
   async getPropertyById(id: string): Promise<Property> {
-    const response = await apiService.get<{
-      success: boolean;
-      data: {
-        property: Property;
-      };
-    }>(`/properties/${id}`);
+    // WORKAROUND: Skip auth to avoid backend 500 error on view tracking
+    const response = await apiService.get<any>(`/properties/${id}`, { skipAuth: true });
 
-    // Unwrap the nested response structure
-    const property = response.data.property;
+    // Handle both potential response structures:
+    // 1. { success: true, data: { ...property } }
+    // 2. { success: true, data: { property: { ...property } } }
+    const propertyData = response?.data?.property || response?.data;
+
+    if (!propertyData || !propertyData.id) {
+      console.error('Invalid property data received:', response);
+      throw new Error(response?.message || 'Failed to load property data');
+    }
 
     // Normalize field names for backward compatibility
     return {
-      ...property,
-      area: property.areaSqm || property.area || 0,
-      rating: property.averageRating || property.rating || 0,
-      reviewCount: property.totalRatings || property.reviewCount || 0,
+      ...propertyData,
+      area: propertyData.areaSqm || propertyData.area || 0,
+      rating: propertyData.averageRating || propertyData.rating || 0,
+      reviewCount: propertyData.totalRatings || propertyData.reviewCount || 0,
     };
+  },
+
+  async checkFavoriteStatus(id: string): Promise<boolean> {
+    try {
+      const response = await apiService.get<{ isFavorite: boolean }>(`/properties/${id}/is-favorite`);
+      return response.isFavorite;
+    } catch (e) {
+      // Fallback or unauthenticated
+      return false;
+    }
   },
 
   async createProperty(data: CreatePropertyData): Promise<Property> {

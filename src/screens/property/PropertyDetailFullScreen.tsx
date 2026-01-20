@@ -10,29 +10,38 @@ import {
   SafeAreaView,
   StatusBar,
   Animated,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useCurrency } from '../../context/CurrencyContext';
+import { propertyService } from '../../services/propertyService';
+import { Property } from '../../types';
 
 const { width } = Dimensions.get('window');
 
 const PropertyDetailFullScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { property } = route.params as any;
+  const params = route.params as { property?: Property; propertyId?: string };
   const { formatPrice } = useCurrency();
   const insets = useSafeAreaInsets();
+
+  const [property, setProperty] = useState<Property | null>(params.property || null);
+  const [loading, setLoading] = useState(!params.property);
+  const [isFavorite, setIsFavorite] = useState(params.property?.isFavorited || false);
+
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(30)).current;
 
   // Get property's currency code (fallback to IDR if not set)
   const currencyCode = property?.currencyCode || 'IDR';
 
-  const [isFavorite, setIsFavorite] = useState(false);
-  const fadeAnim = new Animated.Value(0);
-  const slideAnim = new Animated.Value(30);
-
   useEffect(() => {
+    loadPropertyDetails();
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -47,7 +56,49 @@ const PropertyDetailFullScreen: React.FC = () => {
     ]).start();
   }, []);
 
-  const facilities = [
+  const loadPropertyDetails = async () => {
+    try {
+      if (params.propertyId && !property) {
+        setLoading(true);
+        // This will now be unauthenticated to avoid 500 error
+        const data = await propertyService.getPropertyById(params.propertyId);
+        setProperty(data);
+
+        // Fetch favorite status separately if logged in (handled by service)
+        const isFav = await propertyService.checkFavoriteStatus(params.propertyId);
+        setIsFavorite(isFav);
+      } else if (property) {
+        // We have property data, but need to refresh specific details
+        // Get fresh data anonymously to avoid crash
+        const data = await propertyService.getPropertyById(property.id);
+        setProperty(prev => ({ ...prev, ...data }));
+
+        // Check favorite status separately
+        const isFav = await propertyService.checkFavoriteStatus(property.id);
+        setIsFavorite(isFav);
+      }
+    } catch (error) {
+      console.error('Failed to load property details:', error);
+      Alert.alert('Error', 'Failed to load property details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!property) return;
+
+    try {
+        const previousState = isFavorite;
+        setIsFavorite(!previousState); // Optimistic update
+        await propertyService.toggleFavorite(property.id);
+    } catch (error) {
+        setIsFavorite(isFavorite); // Revert on error
+        console.error('Failed to toggle favorite:', error);
+    }
+  };
+
+  const defaultFacilities = [
     { icon: 'snow-outline', name: 'Air conditioner' },
     { icon: 'restaurant-outline', name: 'Kitchen' },
     { icon: 'car-outline', name: 'Free parking' },
@@ -61,13 +112,14 @@ const PropertyDetailFullScreen: React.FC = () => {
     { icon: 'train-outline', name: 'Train station', distance: '500m' },
   ];
 
+  // Dummy testimonials for now as backend might not return them yet
   const testimonials = [
     {
       id: '1',
       name: 'Sela Joze',
       rating: 5,
       date: '2 weeks ago',
-      text: 'My wife and I had a great experiencing from our house landlord. The communication and access were seamless and spot on Proteine David and his wife took.',
+      text: 'My wife and I had a great experiencing from our house landlord. The communication and access were seamless and spot on.',
       avatar: 'https://i.pravatar.cc/150?img=1',
     },
     {
@@ -80,14 +132,25 @@ const PropertyDetailFullScreen: React.FC = () => {
     },
   ];
 
+  if (loading && !property) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <StatusBar barStyle="dark-content" />
+        <ActivityIndicator size="large" color="#6366F1" />
+      </View>
+    );
+  }
+
+  const primaryImage = property?.images?.[0] || 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400';
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Header Image with Overlay */}
       <View style={styles.headerImageContainer}>
         <Image
-          source={{ uri: property?.image || 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400' }}
+          source={{ uri: primaryImage }}
           style={styles.headerImage}
         />
         <View style={styles.headerOverlay}>
@@ -104,7 +167,7 @@ const PropertyDetailFullScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconButton}
-                onPress={() => setIsFavorite(!isFavorite)}
+                onPress={handleToggleFavorite}
               >
                 <Icon
                   name={isFavorite ? 'heart' : 'heart-outline'}
@@ -139,18 +202,18 @@ const PropertyDetailFullScreen: React.FC = () => {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Icon name="star" size={16} color="#FFB800" />
-                <Text style={styles.statText}>{property?.rating || 'New'}</Text>
+                <Text style={styles.statText}>{property?.rating || property?.averageRating || 'New'}</Text>
                 <Text style={styles.statSubtext}>
-                  {property?.reviews ? `(${property.reviews} reviews)` : '(No reviews)'}
+                  {property?.reviewCount || property?.totalRatings ? `(${property?.reviewCount || property?.totalRatings} reviews)` : '(No reviews)'}
                 </Text>
               </View>
               <View style={styles.statItem}>
                 <Icon name="location-outline" size={16} color="#64748B" />
-                <Text style={styles.statText}>{property?.location || property?.city || 'Unknown Location'}</Text>
+                <Text style={styles.statText}>{property?.city || 'Unknown'}, {property?.country || ''}</Text>
               </View>
               <View style={styles.statItem}>
                 <Icon name="bed-outline" size={16} color="#64748B" />
-                <Text style={styles.statText}>{property?.rooms || property?.bedrooms || 0} room</Text>
+                <Text style={styles.statText}>{property?.bedrooms || 0} room</Text>
               </View>
               <View style={styles.statItem}>
                 <Icon name="water-outline" size={16} color="#64748B" />
@@ -166,11 +229,11 @@ const PropertyDetailFullScreen: React.FC = () => {
           {/* Owner Info */}
           <View style={styles.ownerSection}>
             <Image
-              source={{ uri: property?.user?.avatar || 'https://i.pravatar.cc/150?img=12' }}
+              source={{ uri: property?.owner?.avatar || 'https://i.pravatar.cc/150?img=12' }}
               style={styles.ownerAvatar}
             />
             <View style={styles.ownerInfo}>
-              <Text style={styles.ownerName}>{property?.user?.name || 'Property Owner'}</Text>
+              <Text style={styles.ownerName}>{property?.owner?.name || 'Property Owner'}</Text>
               <Text style={styles.ownerRole}>Landlord</Text>
             </View>
             <View style={styles.ownerActions}>
@@ -193,11 +256,11 @@ const PropertyDetailFullScreen: React.FC = () => {
             </View>
             <View style={styles.facilitiesGrid}>
               {(property?.amenities && Array.isArray(property.amenities) && property.amenities.length > 0
-                ? property.amenities
-                : facilities).slice(0, 4).map((facility: any, index: number) => (
+                ? property.amenities.map((amenity: any) => ({ name: amenity.name || amenity, icon: 'checkmark-circle-outline' }))
+                : defaultFacilities).slice(0, 6).map((facility: any, index: number) => (
                   <View key={index} style={styles.facilityItem}>
-                    <Icon name={facility.icon || 'checkmark-circle-outline'} size={20} color="#64748B" />
-                    <Text style={styles.facilityText}>{facility.name || facility}</Text>
+                    <Icon name={facility.icon} size={20} color="#64748B" />
+                    <Text style={styles.facilityText}>{facility.name}</Text>
                   </View>
                 ))}
             </View>
@@ -207,7 +270,7 @@ const PropertyDetailFullScreen: React.FC = () => {
           <View style={styles.section}>
             <View style={styles.mapContainer}>
               <Image
-                source={{ uri: `https://api.mapbox.com/styles/v1/mapbox/light-v10/static/${property?.longitude || 112.7521},${property?.latitude || 7.8753},12,0/600x300@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw` }}
+                source={{ uri: `https://api.mapbox.com/styles/v1/mapbox/light-v10/static/${property?.longitude || 101.6869},${property?.latitude || 3.1390},14,0/600x300@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw` }}
                 style={styles.mapImage}
               />
               <View style={styles.mapMarker}>
@@ -243,7 +306,7 @@ const PropertyDetailFullScreen: React.FC = () => {
           {/* Average Living Cost */}
           <View style={styles.section}>
             <View style={styles.costCard}>
-              <Text style={styles.costLabel}>Average living cost</Text>
+              <Text style={styles.costLabel}>Estimated monthly cost</Text>
               <Text style={styles.costValue}>{formatPrice(property?.price || 0, currencyCode)}/month</Text>
             </View>
           </View>
@@ -290,7 +353,6 @@ const PropertyDetailFullScreen: React.FC = () => {
           style={styles.rentButton}
           activeOpacity={0.8}
           onPress={() => {
-            console.log('Rent button pressed', property);
             (navigation as any).navigate('RentBooking', { property });
           }}
         >
@@ -305,6 +367,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerImageContainer: {
     width: width,
@@ -322,10 +388,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
   },
   headerButtons: {
     flexDirection: 'row',
-    alignItems: 'center', // Added alignment
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
   },
@@ -356,6 +423,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 24,
     gap: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   watch360Text: {
     fontSize: 14,
@@ -364,9 +436,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -20,
   },
   titleSection: {
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -378,26 +454,27 @@ const styles = StyleSheet.create({
   },
   propertyTitle: {
     flex: 1,
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#000',
-    lineHeight: 28,
+    lineHeight: 30,
     marginRight: 12,
   },
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
+    marginTop: 8,
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   statText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: '500',
+    color: '#334155',
   },
   statSubtext: {
     fontSize: 14,
@@ -406,18 +483,18 @@ const styles = StyleSheet.create({
   ownerSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   ownerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   ownerInfo: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 16,
   },
   ownerName: {
     fontSize: 16,
@@ -431,18 +508,18 @@ const styles = StyleSheet.create({
   },
   ownerActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   ownerActionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F0F0FF',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F0F9FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   section: {
-    padding: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -454,13 +531,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 16,
   },
   seeAllText: {
     fontSize: 14,
     color: '#6366F1',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   facilitiesGrid: {
     flexDirection: 'row',
@@ -470,7 +548,7 @@ const styles = StyleSheet.create({
   facilityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAF7',
+    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
@@ -478,7 +556,7 @@ const styles = StyleSheet.create({
   },
   facilityText: {
     fontSize: 14,
-    color: '#1E293B',
+    color: '#334155',
   },
   mapContainer: {
     width: '100%',
@@ -486,6 +564,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#F1F5F9',
   },
   mapImage: {
     width: '100%',
@@ -502,14 +581,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 16,
+    gap: 12,
   },
   publicFacilityItem: {
     width: '48%',
-    backgroundColor: '#F8FAF7',
+    backgroundColor: '#F8FAFC',
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 16,
   },
   publicFacilityIcon: {
     width: 40,
@@ -519,11 +597,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   publicFacilityName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: '#0F172A',
     marginBottom: 4,
   },
   publicFacilityDistance: {
@@ -531,17 +614,16 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   aboutText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#64748B',
-    marginBottom: 12,
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#475569',
   },
   readMore: {
     color: '#6366F1',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   costCard: {
-    backgroundColor: '#F0F0FF',
+    backgroundColor: '#EEF2FF',
     padding: 20,
     borderRadius: 16,
     flexDirection: 'row',
@@ -549,18 +631,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   costLabel: {
-    fontSize: 14,
-    color: '#64748B',
+    fontSize: 15,
+    color: '#475569',
+    fontWeight: '500',
   },
   costValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: '#0F172A',
   },
   testimonialCard: {
-    backgroundColor: '#F8FAF7',
+    backgroundColor: '#F8FAFC',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 12,
   },
   testimonialHeader: {
@@ -572,6 +655,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: '#E2E8F0',
   },
   testimonialInfo: {
     flex: 1,
@@ -580,8 +664,8 @@ const styles = StyleSheet.create({
   testimonialName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
+    color: '#0F172A',
+    marginBottom: 2,
   },
   testimonialRating: {
     flexDirection: 'row',
@@ -592,9 +676,9 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   testimonialText: {
-    fontSize: 13,
-    lineHeight: 20,
-    color: '#64748B',
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#475569',
   },
   bottomBar: {
     position: 'absolute',
@@ -604,16 +688,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-    zIndex: 1000,
+    shadowRadius: 12,
+    elevation: 20,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -622,17 +705,23 @@ const styles = StyleSheet.create({
   priceAmount: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000',
+    color: '#0F6980',
   },
   priceUnit: {
     fontSize: 14,
     color: '#64748B',
+    marginLeft: 4,
   },
   rentButton: {
-    backgroundColor: '#6366F1',
-    paddingHorizontal: 48,
-    paddingVertical: 16,
-    borderRadius: 28,
+    backgroundColor: '#0F6980',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: '#0F6980',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   rentButtonText: {
     fontSize: 16,
