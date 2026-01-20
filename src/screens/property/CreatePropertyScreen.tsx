@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../context/ThemeContext';
-import { HomeStackParamList } from '../../types';
+import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 import CreatePropertyForm from '../../components/CreatePropertyForm';
 
 type CreatePropertyScreenNavigationProp = StackNavigationProp<

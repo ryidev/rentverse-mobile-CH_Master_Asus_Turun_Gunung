@@ -36,6 +36,7 @@ const ExploreScreen: React.FC = () => {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
   const [filters, setFilters] = useState<FilterValues>({
     page: 1,
     limit: 100, // Increased limit to show more properties on map
@@ -213,8 +214,22 @@ const ExploreScreen: React.FC = () => {
     return iconMap[categoryName] || 'home-outline';
   };
 
+  const formatCurrency = (price: number, currencyCode?: string): string => {
+    const currency = currencyCode || 'IDR';
+    if (currency === 'IDR') {
+      return `Rp ${price.toLocaleString('id-ID')}`;
+    } else if (currency === 'MYR') {
+      return `RM ${price.toLocaleString('ms-MY')}`;
+    }
+    return `${currency} ${price.toLocaleString()}`;
+  };
+
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      showsVerticalScrollIndicator={false}
+      scrollEnabled={scrollEnabled}
+    >
       {/* Search Bar */}
       <Animated.View
         style={[
@@ -260,8 +275,9 @@ const ExploreScreen: React.FC = () => {
         ]}
       >
         <View
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
+          onTouchStart={() => setScrollEnabled(false)}
+          onTouchEnd={() => setScrollEnabled(true)}
+          onTouchCancel={() => setScrollEnabled(true)}
         >
           <MapTilerView
             latitude={userLocation?.latitude || 3.1390}
@@ -295,12 +311,16 @@ const ExploreScreen: React.FC = () => {
               </Text>
             )}
           </View>
-          <TouchableOpacity onPress={() => (navigation as any).navigate('ExploreDetail', {
-            properties: nearbyProperties,
-            title: 'Nearby Properties',
-            location: userLocation,
-            isNearby: true
-          })}>
+          <TouchableOpacity onPress={() =>
+            (navigation as any).navigate('PropertyList', {
+              title: 'Nearby Properties',
+              filters: {
+                latitude: userLocation?.latitude,
+                longitude: userLocation?.longitude,
+                radius: 10,
+              },
+            })
+          }>
             <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
         </View>
@@ -333,7 +353,9 @@ const ExploreScreen: React.FC = () => {
                       </Text>
                     </View>
                     <View style={styles.priceRow}>
-                      <Text style={[styles.priceText, { color: colors.text }]}>${property.price}</Text>
+                      <Text style={[styles.priceText, { color: colors.text }]}>
+                        {formatCurrency(property.price, property.currencyCode)}
+                      </Text>
                       <Text style={[styles.priceUnit, { color: colors.textSecondary }]}>/month</Text>
                     </View>
                   </View>
@@ -367,11 +389,15 @@ const ExploreScreen: React.FC = () => {
               {properties.length} properties found
             </Text>
           </View>
-          <TouchableOpacity onPress={() => (navigation as any).navigate('ExploreDetail', {
-            properties: properties,
-            title: 'All Properties',
-            filters: filters
-          })}>
+          <TouchableOpacity onPress={() =>
+            (navigation as any).navigate('PropertyList', {
+              title: 'Available Properties',
+              filters: {
+                ...filters,
+                search: searchText,
+              },
+            })
+          }>
             <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
         </View>
@@ -403,7 +429,9 @@ const ExploreScreen: React.FC = () => {
                     </Text>
                   </View>
                   <View style={styles.priceRow}>
-                    <Text style={[styles.priceText, { color: colors.text }]}>${property.price}</Text>
+                    <Text style={[styles.priceText, { color: colors.text }]}>
+                      {formatCurrency(property.price, property.currencyCode)}
+                    </Text>
                     <Text style={[styles.priceUnit, { color: colors.textSecondary }]}>/month</Text>
                   </View>
                 </View>
