@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { HomeStackParamList, Property } from '../../types';
+import { Property } from '../../types';
+import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 import { propertyService } from '../../services/propertyService';
 import { Colors } from '../../constants';
 import Loading from '../../components/Loading';
@@ -44,12 +45,9 @@ const PropertyDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const loadPropertyDetails = async () => {
     try {
-      const [propertyData, favoriteStatus] = await Promise.all([
-        propertyService.getPropertyById(propertyId),
-        propertyService.isFavorite(propertyId),
-      ]);
+      const propertyData = await propertyService.getPropertyById(propertyId);
       setProperty(propertyData);
-      setIsFavorite(favoriteStatus);
+      setIsFavorite(propertyData.isFavorited || false);
     } catch (error) {
       console.error('Error loading property details:', error);
       Alert.alert('Error', 'Failed to load property details');
@@ -59,18 +57,14 @@ const PropertyDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+
   const handleFavoriteToggle = async () => {
     try {
-      if (isFavorite) {
-        const favorites = await propertyService.getFavorites();
-        const fav = favorites.find(f => f.propertyId === propertyId);
-        if (fav) {
-          await propertyService.removeFromFavorites(fav.id);
-        }
-      } else {
-        await propertyService.addToFavorites(propertyId);
-      }
+      await propertyService.toggleFavorite(propertyId);
       setIsFavorite(!isFavorite);
+      // Reload property to get updated favorite count
+      const updatedProperty = await propertyService.getPropertyById(propertyId);
+      setProperty(updatedProperty);
     } catch (error) {
       console.error('Error toggling favorite:', error);
       Alert.alert('Error', 'Failed to update favorite');
@@ -160,6 +154,30 @@ const PropertyDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               <Text style={styles.detailValue}>{property.area} m²</Text>
             </View>
           </View>
+
+          {/* Property Statistics */}
+          {(property.viewCount !== undefined || property.favoriteCount !== undefined || property.furnished !== undefined) && (
+            <View style={styles.statsContainer}>
+              {property.viewCount !== undefined && (
+                <View style={styles.statItem}>
+                  <Icon name="eye" size={18} color={Colors.textSecondary} />
+                  <Text style={styles.statText}>{property.viewCount} views</Text>
+                </View>
+              )}
+              {property.favoriteCount !== undefined && (
+                <View style={styles.statItem}>
+                  <Icon name="heart" size={18} color={Colors.textSecondary} />
+                  <Text style={styles.statText}>{property.favoriteCount} favorites</Text>
+                </View>
+              )}
+              {property.furnished !== undefined && (
+                <View style={styles.statItem}>
+                  <Icon name={property.furnished ? "sofa" : "sofa-outline"} size={18} color={Colors.textSecondary} />
+                  <Text style={styles.statText}>{property.furnished ? 'Furnished' : 'Unfurnished'}</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Description */}
           <View style={styles.section}>
@@ -329,6 +347,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text,
     marginLeft: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 24,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginLeft: 4,
   },
   priceContainer: {
     flexDirection: 'row',

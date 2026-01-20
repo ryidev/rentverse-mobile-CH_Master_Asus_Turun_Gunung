@@ -479,9 +479,18 @@ const HomeScreen: React.FC = () => {
                         {searchResults.length} {searchResults.length === 1 ? 'property' : 'properties'} found
                       </Text>
                     </View>
-                    <TouchableOpacity onPress={clearSearch}>
-                      <Text style={styles.seeAllText}>Clear</Text>
-                    </TouchableOpacity>
+                  <TouchableOpacity onPress={() =>
+                    (navigation as any).navigate('PropertyList', {
+                      title: `Search results for "${searchQuery}"`,
+                      filters: {
+                        search: searchQuery,
+                        city: searchQuery,
+                        country: selectedCountry,
+                      },
+                    })
+                  }>
+                    <Text style={styles.seeAllText}>Clear</Text>
+                  </TouchableOpacity>
                   </View>
                   {loadingSearch ? (
                     <View style={styles.loadingContainer}>
@@ -520,7 +529,16 @@ const HomeScreen: React.FC = () => {
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>Top rated in {searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Yogyakarta')}</Text>
                     <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>Highest rated properties</Text>
                   </View>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() =>
+                    (navigation as any).navigate('PropertyList', {
+                      title: `Top Rated in ${searchActive && searchQuery ? searchQuery : (currentLocation?.city || 'Yogyakarta')}`,
+                      filters: {
+                        city: searchActive && searchQuery ? searchQuery : currentLocation?.city,
+                        country: selectedCountry,
+                        sortBy: 'rating',
+                      },
+                    })
+                  }>
                     <Text style={styles.seeAllText}>See all</Text>
                   </TouchableOpacity>
                 </View>
@@ -554,7 +572,13 @@ const HomeScreen: React.FC = () => {
                   <View>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>Your favorites</Text>
                   </View>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() =>
+                    (navigation as any).navigate('PropertyList', {
+                      title: 'Your Favorites',
+                      filters: {},
+                      isFavorites: true,
+                    })
+                  }>
                     <Text style={styles.seeAllText}>See all</Text>
                   </TouchableOpacity>
                 </View>
