@@ -226,6 +226,16 @@ const MapTilerView: React.FC<MapTilerViewProps> = ({
         map.setView([newLat, newLng], 14);
       };
 
+      window.recenterMap = function(lat, lng) {
+        if (map) {
+          map.setView([lat, lng], 14);
+          if (userMarker) {
+            userMarker.setLatLng([lat, lng]);
+            userMarker.openPopup();
+          }
+        }
+      };
+
       window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'loaded' }));
     })();
   </script>
@@ -259,9 +269,8 @@ const MapTilerView: React.FC<MapTilerViewProps> = ({
   const handleRecenter = () => {
     if (webViewRef.current && showUserLocation) {
       webViewRef.current.injectJavaScript(`
-        if (typeof map !== 'undefined' && typeof userMarker !== 'undefined') {
-          map.setView([${latitude}, ${longitude}], 14);
-          userMarker.openPopup();
+        if (typeof recenterMap !== 'undefined') {
+          recenterMap(${latitude}, ${longitude});
         }
         true;
       `);

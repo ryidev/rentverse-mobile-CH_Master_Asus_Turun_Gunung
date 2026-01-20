@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { HomeStackParamList } from '../../types'; // Adjust imports if necessary
+import { HomeStackParamList } from '../../navigation/HomeStackNavigator';
 import { Colors } from '../../constants';
 import CreatePropertyForm from '../../components/CreatePropertyForm';
 import { apiService } from '../../services/api';

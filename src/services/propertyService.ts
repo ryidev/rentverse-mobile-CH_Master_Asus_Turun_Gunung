@@ -98,14 +98,23 @@ export const propertyService = {
       success: boolean;
       data: {
         properties: Property[];
-        count: number;
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
       }
-    }>('/properties/top-rated', {
-      params,
+    }>('/properties', {
+      params: {
+        ...params,
+        sortBy: 'rating',
+        page: 1,
+      },
     });
     return {
       properties: response.data?.properties || [],
-      total: response.data?.count || 0,
+      total: response.data?.pagination?.total || 0,
     };
   },
 
@@ -117,13 +126,21 @@ export const propertyService = {
     const response = await apiService.get<{
       success: boolean;
       data: {
-        total: number;
-        byCity: Array<{ city: string; count: number }>;
+        properties: Property[];
+        pagination: {
+          total: number;
+        };
       }
-    }>('/properties/stats', {
-      params,
+    }>('/properties', {
+      params: {
+        ...params,
+        limit: 1, // We only need the count
+      },
     });
-    return response.data || { total: 0, byCity: [] };
+    return {
+      total: response.data?.pagination?.total || 0,
+      byCity: [], // Backend doesn't provide this, would need separate endpoint
+    };
   },
 
   async getUserFavorites(params?: {
@@ -162,7 +179,23 @@ export const propertyService = {
 
 
   async getPropertyById(id: string): Promise<Property> {
-    return apiService.get<Property>(`/properties/${id}`);
+    const response = await apiService.get<{
+      success: boolean;
+      data: {
+        property: Property;
+      };
+    }>(`/properties/${id}`);
+
+    // Unwrap the nested response structure
+    const property = response.data.property;
+
+    // Normalize field names for backward compatibility
+    return {
+      ...property,
+      area: property.areaSqm || property.area || 0,
+      rating: property.averageRating || property.rating || 0,
+      reviewCount: property.totalRatings || property.reviewCount || 0,
+    };
   },
 
   async createProperty(data: CreatePropertyData): Promise<Property> {

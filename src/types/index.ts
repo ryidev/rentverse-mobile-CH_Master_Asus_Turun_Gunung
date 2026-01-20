@@ -36,6 +36,7 @@ export interface RegisterData {
 // Property Types
 export interface Property {
   id: string;
+  code: string; // Unique property code
   title: string;
   description: string;
   price: number;
@@ -44,22 +45,37 @@ export interface Property {
   city?: string;
   state?: string;
   country?: string;
+  zipCode?: string;
   latitude?: number;
   longitude?: number;
+  mapsUrl?: string; // Google Maps URL
   bedrooms: number;
   bathrooms: number;
-  area: number; // in sqm
+  area: number; // in sqm (for backward compatibility)
+  areaSqm?: number; // Backend uses areaSqm
+  furnished?: boolean;
   images: string[];
   amenities: Amenity[];
   ownerId: string;
   owner?: User;
-  rating: number;
-  reviewCount: number;
+  rating: number; // Average rating (for backward compatibility)
+  averageRating?: number; // Backend returns averageRating
+  reviewCount: number; // Total ratings count (for backward compatibility)
+  totalRatings?: number; // Backend returns totalRatings
+  viewCount?: number; // Number of views
+  isFavorited?: boolean; // Whether current user favorited this property
+  favoriteCount?: number; // Total number of favorites
   isFeatured: boolean;
+  isAvailable?: boolean;
   createdAt: string;
   updatedAt: string;
   status?: 'pending_review' | 'approved' | 'rejected' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'REVIEW_PENDING';
-  currencyCode?: string; // Store property's original currency (IDR, MYR, etc)
+  currencyCode: string; // Store property's original currency (IDR, MYR, etc)
+  propertyType?: {
+    id: string;
+    code: string;
+    name: string;
+  };
 }
 
 export interface CreatePropertyData {
@@ -153,11 +169,4 @@ export type MainTabParamList = {
   HomeScreen: undefined;
   Saved: undefined;
   Profile: undefined;
-};
-
-export type HomeStackParamList = {
-  HomeScreen: undefined;
-  PropertyDetail: { propertyId: string };
-  CreateProperty: undefined;
-  EditProperty: { propertyId: string };
 };
